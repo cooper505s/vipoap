@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://vipoap.co.uk/sitemap.xml

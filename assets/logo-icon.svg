@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 110" role="img" aria-labelledby="title desc">
+  <title id="title">VIPOAP Wi-Fi heart</title>
+  <desc id="desc">A green heart made from Wi-Fi signal bars.</desc>
+  <g fill="none" stroke="#5A8F5A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 35 C20 13 37 11 50 27"/>
+    <path d="M50 27 C63 11 80 13 90 35"/>
+    <path d="M18 51 C32 34 68 34 82 51"/>
+    <path d="M29 69 C40 57 60 57 71 69"/>
+  </g>
+  <path d="M50 104 L36 90 Q50 77 64 90 Z" fill="#5A8F5A"/>
+</svg>

@@ -1,0 +1,12 @@
+VIPOAP APPROVED BRAND ASSETS — LOCKED
+
+Primary logo: logo-primary.png
+Icon: logo-icon.png
+
+These PNG files preserve the exact approved artwork. They have transparent backgrounds so no box appears around the logo in the site header or footer.
+
+Do not redraw, regenerate, recolour, stretch, crop internally, substitute the font, or add a border/background box.
+
+Contact details
+Telephone: 07977 254158
+Email: help@vipoap.co.uk
