@@ -36,3 +36,11 @@
 .privacy-content p{color:var(--muted)}
 .booking-status.ok{color:var(--green-dark);font-weight:800;background:var(--green-soft);border-radius:12px;padding:12px 14px}
 @media(max-width:680px){.header-main{min-height:72px}.brand img{max-height:70px}.privacy-content h2{font-size:1.35rem}}
+
+/* Compact brand lockup: supplied heart icon, name and one strapline. */
+.site-header .brand{display:inline-flex;align-items:center;gap:14px}
+.site-header .brand img{width:92px;height:72px;max-height:none;object-fit:cover;flex:0 0 auto}
+.brand-copy{display:grid;line-height:1.02}
+.brand-copy strong{color:var(--navy);font-size:2.25rem;font-weight:700;letter-spacing:.09em}
+.brand-copy small{color:var(--green-dark);font-size:.9rem;font-weight:600;margin-top:7px;white-space:nowrap}
+@media(max-width:680px){.site-header .brand{gap:10px}.site-header .brand img{width:72px;height:56px}.brand-copy strong{font-size:1.75rem}.brand-copy small{font-size:.7rem;margin-top:5px}.header-main{min-height:76px}}
