@@ -1,5 +1,5 @@
 {
-  "name": "VIPOAP Home Technology Support",
+  "name": "VIPOAP — Technology without the worry",
   "short_name": "VIPOAP",
   "start_url": "/app/",
   "scope": "/app/",
@@ -8,7 +8,7 @@
   "theme_color": "#5A8F5A",
   "description": "Book friendly home technology support in and around Andover.",
   "icons": [
-    {"src":"../assets/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"../assets/icon-192.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+    {"src":"../assets/icon-192.png?v=3","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"../assets/icon-512.png?v=3","sizes":"512x512","type":"image/png","purpose":"any maskable"}
   ]
 }
