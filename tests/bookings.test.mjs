@@ -56,6 +56,8 @@ test('stores an offered slot and sends the notification',async t=>{
   assert.equal(emails.length,2);
   assert.doesNotMatch(emails[0].html,/<script>/);
   assert.match(emails[0].html,/&amp;/);
+  assert.match(emails[0].html,/£39/);
+  assert.match(emails[1].html,/Visit price:<\/strong> £39/);
 });
 
 test('removes the reservation when email delivery fails',async t=>{
