@@ -16,7 +16,7 @@ export async function onRequestPost({request,env}){
   const booking={service:clean(body.service,100),duration:Number(body.duration),date:clean(body.date,10),time:clean(body.time,5),name:clean(body.name,100),phone:clean(body.phone,40),email:clean(body.email,120),postcode:clean(body.postcode,20),details:clean(body.details,1000)};
   if(!booking.service||![30,60].includes(booking.duration)||!/^\d{4}-\d{2}-\d{2}$/.test(booking.date)||!/^\d{2}:\d{2}$/.test(booking.time)||!booking.name||!booking.phone||!booking.postcode)return Response.json({error:'Please complete all required fields.'},{status:400});
   const chosen=new Date(`${booking.date}T12:00:00`),[hour,minute]=booking.time.split(':').map(Number),start=toMinutes(booking.time),end=start+booking.duration;
-  if(Number.isNaN(chosen.getTime())||hour>23||minute>59||minute%30!==0)return Response.json({error:'Please choose a valid appointment time.'},{status:400});
+  const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);if(Number.isNaN(chosen.getTime())||chosen.toISOString().slice(0,10)!==booking.date||booking.date<tomorrow||hour>23||minute>59||minute%30!==0)return Response.json({error:'Please choose a valid future appointment time.'},{status:400});
   let settings={weekly:DEFAULT_AVAILABILITY,blockedDates:[]};if(env.VIPOAP_DATA){const saved=await env.VIPOAP_DATA.get('availability','json');if(saved)settings=saved}
   const ranges=settings.weekly?.[DAY_NAMES[chosen.getDay()]]||[],allowed=!settings.blockedDates?.includes(booking.date)&&ranges.some(([from,to])=>start>=toMinutes(from)&&end<=toMinutes(to));
   if(!allowed)return Response.json({error:'That appointment time is not available. Please choose another time.'},{status:409});
