@@ -1,0 +1,8 @@
+/* VIPOAP primary typeface, matched to the approved rounded wordmark. */
+@font-face {
+  font-family: "Quicksand";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/quicksand-latin.woff2") format("woff2");
+}

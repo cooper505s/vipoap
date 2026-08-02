@@ -1,5 +1,5 @@
-const CACHE='vipoap-app-v1';
-const ASSETS=['/app/','/app/index.html','/app/manifest.webmanifest','/assets/logo-primary.png','/assets/icon-192.png'];
+const CACHE='vipoap-app-v3';
+const ASSETS=['/app/','/app/index.html','/app/manifest.webmanifest','/assets/fonts.css','/assets/fonts/quicksand-latin.woff2','/assets/vipoap-heart-transparent.png','/assets/icon-192.png?v=3','/assets/icon-512.png?v=3'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
 self.addEventListener('fetch',event=>{
