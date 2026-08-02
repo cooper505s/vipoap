@@ -1,0 +1,8 @@
+{
+  "name": "vipoap",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/bookings.test.mjs"
+  }
+}

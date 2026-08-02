@@ -46,6 +46,15 @@ Do not:
 
 Typography must be highly readable, friendly and consistent.
 
+Primary typeface: **Quicksand**
+
+- Regular body copy: `400`
+- Supporting emphasis: `500`
+- Navigation and labels: `600`
+- Headings, buttons and supporting display text: `700`
+
+The approved VIPOAP name must remain part of the locked logo artwork. The website must self-host Quicksand for all live text. Use `"Segoe UI", Arial, sans-serif` only as technical fallbacks while the font loads.
+
 Rules:
 
 - use one primary font family across the website, app and portal;
