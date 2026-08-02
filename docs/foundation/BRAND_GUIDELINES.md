@@ -46,15 +46,14 @@ Do not:
 
 Typography must be highly readable, friendly and consistent.
 
-Primary typeface: **Nunito**
+Primary typeface: **Quicksand**
 
 - Regular body copy: `400`
-- Supporting emphasis: `600`
-- Navigation and labels: `700`
-- Headings, buttons and the VIPOAP wordmark: `800`
-- Strong numeric highlights only: `900`
+- Supporting emphasis: `500`
+- Navigation and labels: `600`
+- Headings, buttons and supporting display text: `700`
 
-The website must self-host the approved Nunito webfont. Use `"Segoe UI", Arial, sans-serif` only as technical fallbacks while the font loads.
+The approved VIPOAP name must remain part of the locked logo artwork. The website must self-host Quicksand for all live text. Use `"Segoe UI", Arial, sans-serif` only as technical fallbacks while the font loads.
 
 Rules:
 
