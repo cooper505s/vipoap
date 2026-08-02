@@ -46,6 +46,16 @@ Do not:
 
 Typography must be highly readable, friendly and consistent.
 
+Primary typeface: **Nunito**
+
+- Regular body copy: `400`
+- Supporting emphasis: `600`
+- Navigation and labels: `700`
+- Headings, buttons and the VIPOAP wordmark: `800`
+- Strong numeric highlights only: `900`
+
+The website must self-host the approved Nunito webfont. Use `"Segoe UI", Arial, sans-serif` only as technical fallbacks while the font loads.
+
 Rules:
 
 - use one primary font family across the website, app and portal;
