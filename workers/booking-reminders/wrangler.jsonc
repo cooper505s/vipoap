@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vipoap-booking-reminders",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-08",
+  "triggers": { "crons": ["*/30 * * * *"] },
+  "kv_namespaces": [{ "binding": "VIPOAP_DATA", "id": "REPLACE_WITH_EXISTING_VIPOAP_DATA_NAMESPACE_ID" }],
+  "observability": { "enabled": true }
+}
