@@ -1,0 +1,19 @@
+{
+  "name":"VIPOAP OS",
+  "short_name":"VIPOAP OS",
+  "description":"Secure VIPOAP customer, visit and business operations.",
+  "start_url":"/admin/os",
+  "scope":"/admin/",
+  "display":"standalone",
+  "background_color":"#F7F3EC",
+  "theme_color":"#5A8F5A",
+  "icons":[
+    {"src":"../assets/icon-192.png?v=3","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"../assets/icon-512.png?v=3","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ],
+  "shortcuts":[
+    {"name":"Overview","url":"/admin/os"},
+    {"name":"Customers","url":"/admin/customers"},
+    {"name":"Log a call-out","url":"/admin/#calloutEditor"}
+  ]
+}

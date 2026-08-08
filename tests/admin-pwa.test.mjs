@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
+test('admin OS is independently installable and scoped securely',()=>{const manifest=JSON.parse(read('admin/manifest.webmanifest'));assert.equal(manifest.name,'VIPOAP OS');assert.equal(manifest.start_url,'/admin/os');assert.equal(manifest.scope,'/admin/');assert.equal(manifest.display,'standalone');assert.ok(manifest.shortcuts.some(x=>x.url.includes('calloutEditor')))});
+test('every admin workspace includes the mobile OS navigation',()=>{for(const page of ['admin/index.html','admin/customers.html','admin/os.html']){const html=read(page);assert.match(html,/manifest\.webmanifest/);assert.match(html,/mobile-nav\.js/);assert.match(html,/apple-mobile-web-app-capable/)}});
+test('admin service worker never intercepts API requests',()=>{const worker=read('admin/service-worker.js');assert.match(worker,/startsWith\('\/api\/'\)/);assert.match(worker,/request\.method!==\'GET\'/);assert.match(worker,/vipoap-os-v1/)});
