@@ -2,7 +2,7 @@
   "name": "VIPOAP — Technology without the worry",
   "short_name": "VIPOAP",
   "start_url": "/app/",
-  "scope": "/app/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F7F3EC",
   "theme_color": "#5A8F5A",
