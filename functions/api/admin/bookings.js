@@ -12,9 +12,9 @@ export async function onRequestGet({request,env}){
 export async function onRequestPatch({request,env}){
   if(!await authorised(request,env,'manage_calls'))return Response.json({error:'Unauthorised'},{status:401});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
-  const body=await request.json(); const key=clean(body.key,200); const status=clean(body.status,20); const adminNotes=clean(body.adminNotes,1500);
+  const body=await request.json(); const key=clean(body.key,200); const status=clean(body.status,20); const adminNotes=clean(body.adminNotes,1500);const cancellationReason=clean(body.cancellationReason,500);const cancellationWaived=Boolean(body.cancellationWaived);const cancellationCharge=status==='cancelled'&&!cancellationWaived?Math.max(0,Math.min(15,Number(body.cancellationCharge)||0)):0;
   if(!key.startsWith('booking:')||!['pending','confirmed','declined','completed','cancelled'].includes(status))return Response.json({error:'Invalid update.'},{status:400});
   const booking=await env.VIPOAP_DATA.get(key,'json'); if(!booking)return Response.json({error:'Booking not found.'},{status:404});
-  await env.VIPOAP_DATA.put(key,JSON.stringify({...booking,status,adminNotes,updatedAt:new Date().toISOString()}));
+  await env.VIPOAP_DATA.put(key,JSON.stringify({...booking,status,adminNotes,cancellationCharge,cancellationWaived,cancellationReason,updatedAt:new Date().toISOString()}));
   return Response.json({ok:true});
 }
