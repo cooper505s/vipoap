@@ -9,7 +9,7 @@ function validDate(value){
 function normalise(body){
   const duration=Number(body.duration),amountCharged=Number(body.amountCharged||0);
   return {
-    linkedBookingKey:clean(body.linkedBookingKey,200),date:clean(body.date,10),customerName:clean(body.customerName,100),phone:clean(body.phone,40),postcode:clean(body.postcode,20),category:clean(body.category,60),duration:Number.isFinite(duration)?duration:0,amountCharged:Number.isFinite(amountCharged)?Math.round(amountCharged*100)/100:0,paymentStatus:clean(body.paymentStatus,20),summary:clean(body.summary,1500),actionsTaken:clean(body.actionsTaken,2500),recommendations:clean(body.recommendations,1500),followUpRequired:Boolean(body.followUpRequired),followUpDate:clean(body.followUpDate,10),followUpNotes:clean(body.followUpNotes,1000),status:clean(body.status,20)
+    linkedBookingKey:clean(body.linkedBookingKey,200),date:clean(body.date,10),customerName:clean(body.customerName,100),phone:clean(body.phone,40),postcode:clean(body.postcode,20),category:clean(body.category,60),duration:Number.isFinite(duration)?duration:0,amountCharged:Number.isFinite(amountCharged)?Math.round(amountCharged*100)/100:0,paymentStatus:clean(body.paymentStatus,20),summary:clean(body.summary,1500),actionsTaken:clean(body.actionsTaken,2500),recommendations:clean(body.recommendations,1500),followUpRequired:Boolean(body.followUpRequired),followUpDate:clean(body.followUpDate,10),followUpNotes:clean(body.followUpNotes,1000),followUpCompleted:Boolean(body.followUpCompleted),followUpCompletedAt:clean(body.followUpCompletedAt,40),status:clean(body.status,20)
   };
 }
 function validate(record){
@@ -50,6 +50,7 @@ export async function onRequestPatch({request,env}){
   const key=clean(body.key,250);if(!key.startsWith('callout:'))return Response.json({error:'Invalid call-out key.'},{status:400});
   const existing=await env.VIPOAP_DATA.get(key,'json');if(!existing)return Response.json({error:'Call-out not found.'},{status:404});
   const record=normalise(body),error=validate(record);if(error)return Response.json({error},{status:400});
+  if(!Object.hasOwn(body,'followUpCompleted')){record.followUpCompleted=Boolean(existing.followUpCompleted);record.followUpCompletedAt=existing.followUpCompletedAt||''}
   const customer=await ensureCustomer(env,{name:record.customerName,phone:record.phone,postcode:record.postcode,territoryId:existing.territoryId,operatorId:existing.operatorId});
   await env.VIPOAP_DATA.put(key,JSON.stringify({...existing,...record,customerId:customer?.key||existing.customerId||'',territoryId:customer?.territoryId||existing.territoryId||'andover',operatorId:customer?.operatorId||existing.operatorId||'dan-stevens',updatedAt:new Date().toISOString()}));
   console.log(JSON.stringify({event:'callout_updated',reference:existing.reference,status:record.status}));
