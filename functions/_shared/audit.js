@@ -1,0 +1,1 @@
+export async function audit(env,context,action,entityType,entityKey,details={}){if(!env.VIPOAP_DATA)return;const now=new Date().toISOString(),key=`audit:${now}:${crypto.randomUUID()}`;await env.VIPOAP_DATA.put(key,JSON.stringify({action,entityType,entityKey,details,actorEmail:context?.email||'system',operatorId:context?.operatorId||'system',createdAt:now}))}
