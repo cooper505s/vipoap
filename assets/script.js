@@ -43,8 +43,19 @@
 
   var cbStatus = document.getElementById('cbStatus');
   if (cbStatus && new URLSearchParams(window.location.search).get('callback') === 'sent') {
-    cbStatus.textContent = 'Thank you. Your callback request has been sent to Dan.';
+    cbStatus.textContent = 'Thank you. Your callback request has been sent to our team.';
     cbStatus.className = 'booking-status ok';
   }
 
+}());
+
+(function(){
+  var nav=document.querySelector('.main-nav .nav-row');
+  if(nav&&!nav.querySelector('[href="family-support.html"]')){var link=document.createElement('a');link.href='family-support.html';link.textContent='For Your Parents';var contact=nav.querySelector('[href="contact.html"]');nav.insertBefore(link,contact)}
+  if(!/\/(index\.html)?$/.test(location.pathname))return;
+  var main=document.querySelector('main');if(!main)return;
+  var local=document.createElement('section');local.className='local-people';local.innerHTML='<div class="wrap local-grid"><div><span class="eyebrow">Local people, local support</span><h2>Your area is supported by its own VIPOAP technology specialist</h2><p>Each VIPOAP area is run by a trained local person who understands the community and provides one familiar contact for home technology help.</p><p>We are expanding carefully across the country. If we have not reached your area yet, we are sorry, but our aim is to eventually provide trusted local VIPOAP support throughout the UK.</p><div class="hero-actions"><a class="btn btn-primary" href="join-us.html">Bring VIPOAP to your area</a><a class="btn btn-secondary" href="stories.html">About our approach</a></div></div><div class="local-card"><h2>Interested in running your area?</h2><p>Technically capable, patient local people can register to operate a territory, complete VIPOAP training and receive suitable enquiries allocated to their area.</p><a href="join-us.html"><strong>See the requirements and register &rarr;</strong></a></div></div>';main.appendChild(local);
+  var before=local;
+  var section=document.createElement('section');section.className='surface family-support-home';section.innerHTML='<div class="wrap local-grid"><div><span class="eyebrow">Helping from a distance</span><h2>Local technology support for your parents</h2><p>If you do not live nearby, or do not feel able to solve their technology problems, you can arrange and manage trusted VIPOAP support for a parent.</p><p>With their consent, you can be the family contact, manage visits and payment, and receive clear updates while they keep a familiar local person to call.</p><a class="btn btn-primary" href="family-support.html">See support for your parents</a></div><div class="local-card"><h2>They remain in control</h2><p>Your parent decides what help is provided and what may be shared with you. We record agreed contacts and keep routine updates clear and respectful.</p></div></div>';
+  before.parentNode.insertBefore(section,before);
 }());

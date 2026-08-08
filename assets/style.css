@@ -44,3 +44,18 @@
 .brand-copy strong{color:var(--navy);font-family:Quicksand,"Segoe UI",Arial,sans-serif;font-size:2.25rem;font-weight:700;letter-spacing:.09em}
 .brand-copy small{color:var(--green-dark);font-size:.9rem;font-weight:600;margin-top:7px;white-space:nowrap}
 @media(max-width:680px){.site-header .brand{gap:10px}.site-header .brand img{width:72px;height:56px}.brand-copy strong{font-size:1.75rem}.brand-copy small{font-size:.7rem;margin-top:5px}.header-main{min-height:76px}}
+
+/* Complete high-contrast/negative mode. */
+html.contrast{color-scheme:dark;background:#000}
+html.contrast body,html.contrast main,html.contrast section,html.contrast .site-header,html.contrast .main-nav,html.contrast .page-hero,html.contrast .surface,html.contrast .soft-section,html.contrast .proof-section,html.contrast .about-hero,html.contrast .contact-hero{background:#000!important;color:#fff!important}
+html.contrast .hero-shell,html.contrast .home-mesh,html.contrast .value-grid,html.contrast .service-tiles a,html.contrast .problem-card,html.contrast .proof-grid article,html.contrast .service-card,html.contrast .help-card,html.contrast .price-card,html.contrast .tip-card,html.contrast .guide-card,html.contrast .faq-item,html.contrast .booking-form,html.contrast .page-hero-card,html.contrast .reassurance-card,html.contrast .about-card,html.contrast .contact-choice,html.contrast .visit-step,html.contrast .contact-note,html.contrast .service-area,html.contrast .scam-card,html.contrast details{background:#050505!important;color:#fff!important;border-color:#fff!important;box-shadow:none!important}
+html.contrast h1,html.contrast h2,html.contrast h3,html.contrast p,html.contrast li,html.contrast strong,html.contrast small,html.contrast summary,html.contrast label,html.contrast .muted,html.contrast .question,html.contrast .hero-note,html.contrast .page-hero p,html.contrast .tip-body{color:#fff!important}
+html.contrast a:not(.btn),html.contrast .eyebrow,html.contrast .main-nav a:hover,html.contrast .main-nav a.active{color:#ffe600!important}
+html.contrast .btn-primary,html.contrast .booking-form button,html.contrast .active-size{background:#ffe600!important;border-color:#ffe600!important;color:#000!important}
+html.contrast .btn-secondary,html.contrast .tool-button,html.contrast .nav-toggle{background:#000!important;border-color:#ffe600!important;color:#ffe600!important}
+html.contrast input,html.contrast select,html.contrast textarea{background:#000!important;color:#fff!important;border-color:#fff!important}
+html.contrast input::placeholder,html.contrast textarea::placeholder{color:#ddd!important;opacity:1}
+html.contrast .phone-circle,html.contrast .icon-wrap,html.contrast .tile-icon,html.contrast .value-grid span,html.contrast .problem-icon,html.contrast .tip-tag{background:#171717!important;color:#ffe600!important;border:1px solid #ffe600}
+html.contrast footer{background:#000!important;border-top:2px solid #fff}
+html.contrast .footer-brand span,html.contrast footer a,html.contrast footer strong{color:#fff!important}
+html.contrast #contrastToggle{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}
