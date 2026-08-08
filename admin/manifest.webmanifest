@@ -14,6 +14,7 @@
   "shortcuts":[
     {"name":"Overview","url":"/admin/os"},
     {"name":"Customers","url":"/admin/customers"},
-    {"name":"Log a call-out","url":"/admin/#calloutEditor"}
+    {"name":"Log a call-out","url":"/admin/#calloutEditor"},
+    {"name":"Memberships and billing","url":"/admin/billing"}
   ]
 }

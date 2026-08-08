@@ -1,0 +1,1 @@
+export async function queueZohoSync(env,entityType,entityKey,action='upsert'){if(!env.VIPOAP_DATA)return;const now=new Date().toISOString(),key=`integration-queue:${now}:${crypto.randomUUID()}`;await env.VIPOAP_DATA.put(key,JSON.stringify({provider:'zoho',entityType,entityKey,action,status:'pending',attempts:0,createdAt:now,updatedAt:now}))}
