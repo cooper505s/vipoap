@@ -1,4 +1,4 @@
-function authorised(request,env){return !!env.ADMIN_PASSWORD&&request.headers.get('x-admin-password')===env.ADMIN_PASSWORD}
+import {authorised} from '../../_shared/admin-auth.js';
 function clean(value,max=1500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
 function validDate(value){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
@@ -23,7 +23,7 @@ function validate(record){
 }
 
 export async function onRequestGet({request,env}){
-  if(!authorised(request,env))return Response.json({error:'Unauthorised'},{status:401});
+  if(!await authorised(request,env))return Response.json({error:'Unauthorised'},{status:401});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
   const keys=await env.VIPOAP_DATA.list({prefix:'callout:'});
   const callouts=(await Promise.all(keys.keys.map(async key=>({key:key.name,...await env.VIPOAP_DATA.get(key.name,'json')})))).filter(item=>item.reference).sort((a,b)=>`${b.date} ${b.createdAt}`.localeCompare(`${a.date} ${a.createdAt}`));
@@ -31,7 +31,7 @@ export async function onRequestGet({request,env}){
 }
 
 export async function onRequestPost({request,env}){
-  if(!authorised(request,env))return Response.json({error:'Unauthorised'},{status:401});
+  if(!await authorised(request,env))return Response.json({error:'Unauthorised'},{status:401});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
   let body;try{body=await request.json()}catch{return Response.json({error:'Invalid call-out record.'},{status:400})}
   const record=normalise(body),error=validate(record);if(error)return Response.json({error},{status:400});
@@ -42,7 +42,7 @@ export async function onRequestPost({request,env}){
 }
 
 export async function onRequestPatch({request,env}){
-  if(!authorised(request,env))return Response.json({error:'Unauthorised'},{status:401});
+  if(!await authorised(request,env))return Response.json({error:'Unauthorised'},{status:401});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
   let body;try{body=await request.json()}catch{return Response.json({error:'Invalid call-out record.'},{status:400})}
   const key=clean(body.key,250);if(!key.startsWith('callout:'))return Response.json({error:'Invalid call-out key.'},{status:400});
