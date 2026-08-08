@@ -1,3 +1,4 @@
+import {ensureCustomer} from '../_shared/customers.js';
 const DEFAULT_AVAILABILITY={monday:[['19:00','21:00']],wednesday:[['19:00','21:00']],saturday:[['11:00','13:00'],['16:00','19:00']]};
 const DAY_NAMES=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 function clean(value,max=500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
@@ -48,6 +49,8 @@ export async function onRequestPost({request,env}){
     console.error(JSON.stringify({event:'booking_email_failed',reference:ref,message:error instanceof Error?error.message:'Unknown error'}));
     return jsonError('We could not send the booking. Please try again or call 07977 254158.',502);
   }
+  const customer=await ensureCustomer(env,booking);
+  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,reference:ref,status:'pending',adminNotes:'',customerId:customer?.key||'',territoryId:customer?.territoryId||'andover',operatorId:customer?.operatorId||'dan-stevens',createdAt:now,updatedAt:new Date().toISOString()}));
   console.log(JSON.stringify({event:'booking_created',reference:ref,date:booking.date,time:booking.time,duration:booking.duration}));
   return Response.json({ok:true,reference:ref});
 }

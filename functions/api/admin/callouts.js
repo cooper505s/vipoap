@@ -1,4 +1,5 @@
 import {authorised} from '../../_shared/admin-auth.js';
+import {ensureCustomer} from '../../_shared/customers.js';
 function clean(value,max=1500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
 function validDate(value){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
@@ -35,8 +36,9 @@ export async function onRequestPost({request,env}){
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
   let body;try{body=await request.json()}catch{return Response.json({error:'Invalid call-out record.'},{status:400})}
   const record=normalise(body),error=validate(record);if(error)return Response.json({error},{status:400});
+  const customer=await ensureCustomer(env,{name:record.customerName,phone:record.phone,postcode:record.postcode});
   const now=new Date().toISOString(),reference=`CO-${crypto.randomUUID().split('-')[0].toUpperCase()}`,key=`callout:${record.date}:${crypto.randomUUID()}`;
-  await env.VIPOAP_DATA.put(key,JSON.stringify({...record,reference,createdAt:now,updatedAt:now}));
+  await env.VIPOAP_DATA.put(key,JSON.stringify({...record,customerId:customer?.key||'',territoryId:customer?.territoryId||'andover',operatorId:customer?.operatorId||'dan-stevens',reference,createdAt:now,updatedAt:now}));
   console.log(JSON.stringify({event:'callout_created',reference,date:record.date,status:record.status}));
   return Response.json({ok:true,key,reference});
 }
@@ -48,7 +50,8 @@ export async function onRequestPatch({request,env}){
   const key=clean(body.key,250);if(!key.startsWith('callout:'))return Response.json({error:'Invalid call-out key.'},{status:400});
   const existing=await env.VIPOAP_DATA.get(key,'json');if(!existing)return Response.json({error:'Call-out not found.'},{status:404});
   const record=normalise(body),error=validate(record);if(error)return Response.json({error},{status:400});
-  await env.VIPOAP_DATA.put(key,JSON.stringify({...existing,...record,updatedAt:new Date().toISOString()}));
+  const customer=await ensureCustomer(env,{name:record.customerName,phone:record.phone,postcode:record.postcode,territoryId:existing.territoryId,operatorId:existing.operatorId});
+  await env.VIPOAP_DATA.put(key,JSON.stringify({...existing,...record,customerId:customer?.key||existing.customerId||'',territoryId:customer?.territoryId||existing.territoryId||'andover',operatorId:customer?.operatorId||existing.operatorId||'dan-stevens',updatedAt:new Date().toISOString()}));
   console.log(JSON.stringify({event:'callout_updated',reference:existing.reference,status:record.status}));
   return Response.json({ok:true,key,reference:existing.reference});
 }
