@@ -73,6 +73,18 @@ test('prices and stores a 30-minute remote-support request',async t=>{
   assert.equal(stored.price,'£15');
 });
 
+test('stores an authorised family contact when booking for someone else',async t=>{
+  const {env,values}=environment(),emails=[],originalFetch=globalThis.fetch;
+  globalThis.fetch=async(_url,options)=>{emails.push(JSON.parse(options.body));return new Response(null,{status:202})};t.after(()=>{globalThis.fetch=originalFetch});
+  const response=await onRequestPost({request:request({bookingFor:'someone_else',bookerName:'Alex Customer',bookerPhone:'07123 456789',bookerEmail:'alex@example.com',relationship:'Daughter'}),env});
+  assert.equal(response.status,200);
+  const stored=JSON.parse(values.get(`booking:${nextMonday()}:19:00`));
+  assert.equal(stored.bookingFor,'someone_else');
+  assert.equal(stored.bookerName,'Alex Customer');
+  assert.match(emails[0].html,/Authorised family\/contact/);
+  assert.deepEqual(emails[1].to,['test@example.com','alex@example.com']);
+});
+
 test('removes the reservation when email delivery fails',async t=>{
   const {env,values}=environment();
   const originalFetch=globalThis.fetch;
