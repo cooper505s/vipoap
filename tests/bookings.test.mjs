@@ -53,6 +53,9 @@ test('stores an offered slot and sends the notification',async t=>{
   assert.equal(response.status,200);
   assert.match(result.reference,/^VIP-[A-F0-9]{8}$/);
   assert.ok(values.has(`booking:${nextMonday()}:19:00`));
+  const stored=JSON.parse(values.get(`booking:${nextMonday()}:19:00`));
+  assert.ok(stored.customerId.startsWith('customer:'));
+  assert.equal(stored.territoryId,'andover');
   assert.equal(emails.length,2);
   assert.doesNotMatch(emails[0].html,/<script>/);
   assert.match(emails[0].html,/&amp;/);
