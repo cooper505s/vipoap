@@ -1,0 +1,8 @@
+.top .os-brand{display:flex;align-items:center;gap:11px;min-width:max-content}
+.top .os-brand img{display:block;width:58px;height:58px;object-fit:contain;flex:0 0 auto}
+.top .os-brand h1{font-size:1.35rem;line-height:1.05;margin:0}
+.top .os-brand p{font-size:.82rem;line-height:1.2;margin:4px 0 0}
+.top>.actions{justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.top>.actions .btn{padding:8px 11px;border-radius:9px;font-size:.88rem;white-space:nowrap}
+@media(max-width:850px){.top{flex-direction:row!important;align-items:center!important;flex-wrap:wrap}.top>.actions{width:auto}}
+@media(max-width:560px){.top .os-brand{min-width:0}.top .os-brand img{width:48px;height:48px}.top>.actions{width:100%;justify-content:flex-start;flex-direction:row!important;align-items:center!important}.top>.actions .btn{flex:0 0 auto;text-align:center}}
