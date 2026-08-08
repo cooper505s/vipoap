@@ -9,6 +9,15 @@
     localStorage.setItem('vipoapTextSize', String(step));
   }
 
+  var headerActions = document.querySelector('.header-actions');
+  if (headerActions && !document.getElementById('contrastToggle')) {
+    var accessTools = document.createElement('div');
+    accessTools.className = 'access-tools';
+    accessTools.setAttribute('aria-label', 'Display options');
+    accessTools.innerHTML = '<button class="tool-button" id="textSmaller" type="button" aria-label="Make text smaller">A−</button><button class="tool-button" id="textBigger" type="button" aria-label="Make text larger">A+</button><button class="tool-button" id="contrastToggle" type="button" aria-label="Switch high contrast mode" aria-pressed="false">Contrast</button>';
+    headerActions.insertBefore(accessTools, headerActions.firstChild);
+  }
+
   var textBigger = document.getElementById('textBigger');
   var textSmaller = document.getElementById('textSmaller');
   if (textBigger) textBigger.addEventListener('click', function () { setStep(step + 0.1); });
