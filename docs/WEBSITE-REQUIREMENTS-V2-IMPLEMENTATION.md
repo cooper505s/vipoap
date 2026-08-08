@@ -11,6 +11,7 @@ This file tracks the implementation brief supplied in August 2026. It is an oper
 - £15 late-cancellation/no-show wording, free cancellation until one hour before the appointment and exceptional-circumstance waiver wording.
 - Payment-after-support wording and separate prepaid equipment-purchase wording.
 - Booking fields for support type, address, postcode, problem description, preferred time, contact details, notification channel and optional accessibility notes.
+- “Book for myself” and “Book for someone else” journeys, including the authorised family contact, relationship and consent reminder.
 - Booking and engineer-facing warnings prohibiting storage of passwords, PINs, card details, recovery codes and security answers.
 - Dedicated Remote Support, Safety & Trust and Equipment pages.
 - Remote-access warnings: no unexpected access calls and no permanent unattended access.
