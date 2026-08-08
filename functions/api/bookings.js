@@ -18,7 +18,7 @@ async function sendEmails(env,booking,ref){
   const adminHtml=`<h2>New VIPOAP booking request</h2><p><strong>Reference:</strong> ${escapeHtml(ref)}</p><p><strong>Name:</strong> ${safe.name}</p><p><strong>Telephone:</strong> ${safe.phone}</p><p><strong>Email:</strong> ${safe.email||'Not supplied'}</p><p><strong>Postcode:</strong> ${safe.postcode}</p><p><strong>Service:</strong> ${safe.service}</p><p><strong>Date:</strong> ${safe.date}</p><p><strong>Time:</strong> ${safe.time}</p><p><strong>Duration:</strong> ${safe.duration} minutes (${safe.price})</p><p><strong>Details:</strong><br>${safe.details||'Not supplied'}</p>`;
   await sendMessage(env,{from,to:['help@vipoap.co.uk'],reply_to:booking.email||undefined,subject:`VIPOAP booking request ${ref}`,html:adminHtml},`${ref}-admin`);
   if(booking.email){
-    const customerHtml=`<h2>Thank you, ${safe.name}</h2><p>Your VIPOAP booking request has been received.</p><p><strong>Reference:</strong> ${escapeHtml(ref)}<br><strong>Date:</strong> ${safe.date}<br><strong>Time:</strong> ${safe.time}<br><strong>Length:</strong> ${safe.duration} minutes<br><strong>Visit price:</strong> ${safe.price}</p><p>The price includes the home visit and local travel within Andover and nearby villages. Parts, paid software and subscriptions are separate and are only purchased with your agreement.</p><p>This is a request, not yet a confirmed appointment. Dan will contact you to confirm it.</p><p>Need to change something? Call 07977 254158 or email help@vipoap.co.uk.</p>`;
+    const customerHtml=`<h2>Thank you, ${safe.name}</h2><p>Your VIPOAP booking request has been received.</p><p><strong>Reference:</strong> ${escapeHtml(ref)}<br><strong>Date:</strong> ${safe.date}<br><strong>Time:</strong> ${safe.time}<br><strong>Length:</strong> ${safe.duration} minutes<br><strong>Visit price:</strong> ${safe.price}</p><p>The price includes the home visit and local travel within the agreed service area. Parts, paid software and subscriptions are separate and are only purchased with your agreement.</p><p>This is a request, not yet a confirmed appointment. Your local VIPOAP Engineer Partner will contact you to confirm it.</p><p>Need to change something? Call 07977 254158 or email help@vipoap.co.uk.</p>`;
     await sendMessage(env,{from,to:[booking.email],subject:`We received your VIPOAP booking request ${ref}`,html:customerHtml},`${ref}-customer`);
   }
 }
@@ -31,7 +31,7 @@ export async function onRequestPost({request,env}){
   let body;try{body=await request.json()}catch{return jsonError('Invalid booking request.',400)}
   const booking={service:clean(body.service,100),duration:Number(body.duration),date:clean(body.date,10),time:clean(body.time,5),name:clean(body.name,100),phone:clean(body.phone,40),email:clean(body.email,120),postcode:clean(body.postcode,20),details:clean(body.details,1000)};
   if(!booking.service||![30,60].includes(booking.duration)||!/^\d{4}-\d{2}-\d{2}$/.test(booking.date)||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(booking.time)||!booking.name||!booking.phone||!booking.postcode)return jsonError('Please complete all required fields.',400);
-  booking.price=booking.duration===30?'£39':'£65';
+  booking.price='£30';
   if(booking.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email))return jsonError('Please enter a valid email address.',400);
   const chosen=new Date(`${booking.date}T12:00:00Z`),[hour,minute]=booking.time.split(':').map(Number),start=toMinutes(booking.time),end=start+booking.duration;
   const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);
