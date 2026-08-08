@@ -1,4 +1,5 @@
 import {adminContext} from '../../_shared/admin-auth.js';
+import {hasPermission} from '../../_shared/permissions.js';
 
 async function records(kv,prefix){
   const keys=await kv.list({prefix});
@@ -10,6 +11,7 @@ const completed=record=>['completed','complete','closed','done'].includes(String
 export async function onRequestGet({request,env}){
   const context=await adminContext(request,env);
   if(!context)return Response.json({error:'Unauthorised'},{status:401});
+  if(!hasPermission(context,'view_franchise'))return Response.json({error:'Franchise reporting permission required.'},{status:403});
   const requested=new URL(request.url).searchParams.get('territory')||'';
   const allowed=context.territoryIds.includes('*')||context.territoryIds.includes(requested);
   if(requested&&!allowed)return Response.json({error:'Territory access denied.'},{status:403});
