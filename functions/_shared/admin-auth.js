@@ -1,0 +1,2 @@
+export async function digest(value){const bytes=new TextEncoder().encode(String(value));const hash=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+export async function authorised(request,env){const password=request.headers.get('x-admin-password');if(env.ADMIN_PASSWORD&&password===env.ADMIN_PASSWORD)return true;const token=request.headers.get('x-admin-session');if(!token||!env.VIPOAP_DATA)return false;return Boolean(await env.VIPOAP_DATA.get(`admin-session:${await digest(token)}`))}
