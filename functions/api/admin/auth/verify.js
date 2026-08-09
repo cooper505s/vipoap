@@ -9,5 +9,5 @@ export async function onRequestPost({request,env}){
   const token=`vas_${crypto.randomUUID()}_${crypto.randomUUID()}`;
   await env.VIPOAP_DATA.put(`admin-session:${await digest(token)}`,JSON.stringify({createdAt:new Date().toISOString(),role:record.role||'operator',email:record.email||email,operatorId:record.operatorId,territoryIds:record.territoryIds||[]}),{expirationTtl:28800});
   await env.VIPOAP_DATA.delete(key);
-  return Response.json({ok:true,token,expiresIn:28800});
+  return Response.json({ok:true,token,expiresIn:28800,role:record.role||'operator',operatorId:record.operatorId,territoryIds:record.territoryIds||[],destination:['owner','admin'].includes(record.role)?'/admin/franchise':'/admin/'});
 }
