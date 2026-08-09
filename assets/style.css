@@ -59,3 +59,7 @@ html.contrast .phone-circle,html.contrast .icon-wrap,html.contrast .tile-icon,ht
 html.contrast footer{background:#000!important;border-top:2px solid #fff}
 html.contrast .footer-brand span,html.contrast footer a,html.contrast footer strong{color:#fff!important}
 html.contrast #contrastToggle{background:#ffe600!important;color:#000!important;border-color:#ffe600!important}
+html.contrast .problem-section,html.contrast .app-feature,html.contrast .home-wifi,html.contrast .values-strip,html.contrast .services-calm-hero,html.contrast .wifi-helper,html.contrast .plan-hero,html.contrast .cta-band,html.contrast .reassurance-close{background:#000!important;color:#fff!important}
+html.contrast .app-feature-card,html.contrast .app-preview,html.contrast .app-preview span,html.contrast .mesh-explainer,html.contrast .step,html.contrast .wifi-choice,html.contrast .wifi-result,html.contrast .wifi-trust article,html.contrast .plan-benefit,html.contrast .plan-callout{background:#050505!important;color:#fff!important;border-color:#fff!important;box-shadow:none!important}
+html.contrast .wifi-choice span,html.contrast .wifi-trust p,html.contrast .plan-benefit p,html.contrast .home-mesh-copy p,html.contrast .cta-band p{color:#fff!important}
+.wifi-hero-art{padding:0;overflow:hidden}.wifi-hero-art img{width:100%;aspect-ratio:16/10;object-fit:cover}
