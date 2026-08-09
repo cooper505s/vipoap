@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';const read=f=>fs.readFileSync(new URL('../'+f,import.meta.url),'utf8');
+test('partner login is primary and central admin is discreet',()=>{const page=read('admin/index.html'),login=read('admin/email-login.js');assert.match(page,/VIPOAP Partner Portal/);assert.match(page,/<details[^>]*>/);assert.match(page,/Central administrator sign in/);assert.match(login,/Partner sign in/);assert.match(login,/data\.destination/)});
+test('partner workspace links to territory operations and marketing',()=>{const page=read('admin/index.html');for(const label of ['My area overview','Customers','Training','Marketing Portal'])assert.match(page,new RegExp(label))});
