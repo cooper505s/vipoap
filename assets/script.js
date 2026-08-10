@@ -9,6 +9,15 @@
     localStorage.setItem('vipoapTextSize', String(step));
   }
 
+  var headerActions = document.querySelector('.header-actions');
+  if (headerActions && !document.getElementById('contrastToggle')) {
+    var accessTools = document.createElement('div');
+    accessTools.className = 'access-tools';
+    accessTools.setAttribute('aria-label', 'Display options');
+    accessTools.innerHTML = '<button class="tool-button" id="textSmaller" type="button" aria-label="Make text smaller">A−</button><button class="tool-button" id="textBigger" type="button" aria-label="Make text larger">A+</button><button class="tool-button" id="contrastToggle" type="button" aria-label="Switch high contrast mode" aria-pressed="false">Contrast</button>';
+    headerActions.insertBefore(accessTools, headerActions.firstChild);
+  }
+
   var textBigger = document.getElementById('textBigger');
   var textSmaller = document.getElementById('textSmaller');
   if (textBigger) textBigger.addEventListener('click', function () { setStep(step + 0.1); });
@@ -52,7 +61,7 @@
 (function(){
   if(!/\/join-us(\.html)?$/.test(location.pathname))return;
   var interest=document.getElementById('interest');if(!interest)return;
-  var model=document.createElement('section');model.className='soft-section engineer-commercial';model.innerHTML='<div class="wrap"><div class="section-head"><span class="eyebrow">VIPOAP Engineer Partner model</span><h2>Flexible local work with no monthly engineer fee</h2><p>Engineer Partners normally work alongside their existing employment and choose their own evenings, weekends, days off and local service area.</p></div><div class="requirements"><article class="requirement-card"><h3>Simple appointment earnings</h3><ul class="tick-list"><li>Customer pays £30 for the first hour</li><li>Engineer receives £25</li><li>VIPOAP receives £5</li><li>Members pay £25.50; the engineer still receives £25</li><li>No work or earnings are guaranteed</li></ul></article><article class="requirement-card"><h3>£99 only after approval</h3><ul class="tick-list"><li>Applications are free</li><li>Screening, training, assessment and required checks come first</li><li>Two branded polo shirts, photo ID and lanyard</li><li>Online training, digital handbook and VIPOAP OS account</li><li>No monthly Engineer Partner membership fee</li></ul></article></div><p class="small-print centered">Additional-time pricing, payment schedules, vetting, insurance and final contractual terms will be confirmed before programme launch. Payment never replaces VIPOAP approval.</p></div>';
+  var model=document.createElement('section');model.className='soft-section engineer-commercial';model.innerHTML='<div class="wrap"><div class="section-head"><span class="eyebrow">VIPOAP Engineer model</span><h2>Flexible local work with no monthly engineer fee</h2><p>VIPOAP Engineers normally work alongside their existing employment and choose their own evenings, weekends, days off and local service area.</p></div><div class="requirements"><article class="requirement-card"><h3>Simple appointment earnings</h3><ul class="tick-list"><li>Customer pays £30 for the first hour</li><li>Engineer receives £25</li><li>VIPOAP receives £5</li><li>Membership adds priority and remote-support benefits, not a home-visit discount</li><li>Additional time is £10 for each 30 minutes, agreed first</li><li>No work or earnings are guaranteed</li></ul></article><article class="requirement-card"><h3>Onboarding only after approval</h3><ul class="tick-list"><li>Applications are free</li><li>Screening, training, assessment and required checks come first</li><li>Current provisional fee: £69 home or £39 remote-only</li><li>Home onboarding includes one branded T-shirt and photo ID</li><li>No monthly VIPOAP Engineer membership fee</li></ul></article></div><p class="small-print centered">Onboarding prices, payment schedules, vetting, insurance and final contractual terms will be confirmed before programme launch. Payment never replaces VIPOAP approval.</p></div>';
   interest.parentNode.insertBefore(model,interest);
 }());
 

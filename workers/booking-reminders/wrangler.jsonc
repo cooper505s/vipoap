@@ -4,6 +4,6 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-08",
   "triggers": { "crons": ["*/30 * * * *"] },
-  "kv_namespaces": [{ "binding": "VIPOAP_DATA", "id": "REPLACE_WITH_EXISTING_VIPOAP_DATA_NAMESPACE_ID" }],
+  "kv_namespaces": [{ "binding": "VIPOAP_DATA", "id": "9b6500e5889e4a2b9f2a459d79959af5" }],
   "observability": { "enabled": true }
 }

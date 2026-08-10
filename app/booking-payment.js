@@ -1,0 +1,9 @@
+(function(){
+  var form=document.getElementById('bookingForm'),support=document.getElementById('supportType');if(!form||!support)return;
+  var field=document.createElement('div');field.className='field';field.id='paymentChoice';
+  field.innerHTML='<label>How would you like to pay?</label><div class="choices"><label class="choice" id="onlineChoice"><input type="radio" name="paymentMethod" value="online" checked><span>Pay securely now</span></label><label class="choice" id="cashChoice"><input type="radio" name="paymentMethod" value="cash"><span>Pay cash after my appointment</span></label><label class="choice hidden" id="membershipChoice"><input type="radio" name="paymentMethod" value="membership"><span>Use membership remote help</span></label></div><div class="note" id="paymentHelp">Pay £30 for the first hour now, or choose cash after the visit. Extra time is charged only with your approval.</div>';
+  var date=document.getElementById('date');date.parentNode.insertBefore(field,date.parentNode);
+  function update(){var remote=support.value==='Remote support',cash=document.getElementById('cashChoice'),member=document.getElementById('membershipChoice'),online=document.querySelector('input[name="paymentMethod"][value="online"]');cash.classList.toggle('hidden',remote);member.classList.toggle('hidden',!remote);if(remote&&document.querySelector('input[name="paymentMethod"]:checked').value==='cash')online.checked=true;document.getElementById('paymentHelp').innerHTML=remote?'Remote support is paid securely upfront unless your membership allowance covers it.':'Pay £30 for the first hour now, or choose cash after the visit. Extra time is charged only with your approval.'}
+  support.addEventListener('change',update);update();
+  form.addEventListener('submit',function(){booking.paymentMethod=document.querySelector('input[name="paymentMethod"]:checked').value});
+}());

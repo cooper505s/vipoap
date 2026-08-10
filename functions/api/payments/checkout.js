@@ -1,0 +1,12 @@
+import {createCheckout} from '../../_shared/payment-provider.js';
+function clean(value,max=200){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
+async function bookingByReference(kv,reference){const keys=await kv.list({prefix:'booking:'});for(const key of keys.keys){const booking=await kv.get(key.name,'json');if(booking?.reference===reference)return{key:key.name,...booking}}return null}
+export async function onRequestPost({request,env}){
+  if(!env.VIPOAP_DATA)return Response.json({error:'Payments are temporarily unavailable.'},{status:503});
+  const body=await request.json(),reference=clean(body.reference,40).toUpperCase(),email=clean(body.email,150).toLowerCase(),booking=await bookingByReference(env.VIPOAP_DATA,reference);
+  if(!booking||String(booking.email||booking.bookerEmail||'').toLowerCase()!==email)return Response.json({error:'Booking could not be verified.'},{status:404});
+  const amount=Math.round(Number(String(booking.price).replace(/[^0-9.]/g,''))*100),paymentKey=`payment:booking:${booking.reference}`;
+  const existing=await env.VIPOAP_DATA.get(paymentKey,'json');if(existing?.checkoutUrl&&existing.status==='pending')return Response.json({ok:true,checkoutUrl:existing.checkoutUrl,paymentId:existing.providerPaymentId,reused:true});
+  if(booking.paymentMethod!=='online'||!['payment-required','failed'].includes(booking.paymentStatus))return Response.json({error:'This booking does not require a new online payment.'},{status:409});
+  try{const checkout=await createCheckout(env,{amount,currency:'GBP',description:`VIPOAP ${booking.supportType} ${booking.reference}`,reference:booking.reference,successUrl:clean(body.successUrl,500),cancelUrl:clean(body.cancelUrl,500),customer:{email},metadata:{bookingKey:booking.key,bookingReference:booking.reference,customerId:booking.customerId||''}},`checkout-${booking.reference}`),now=new Date().toISOString(),payment={bookingKey:booking.key,bookingId:booking.key,bookingReference:booking.reference,customerId:booking.customerId||'',type:'service',method:'online',status:'pending',amount:amount/100,currency:'GBP',providerPaymentId:checkout.id,checkoutUrl:checkout.checkoutUrl,createdAt:now,updatedAt:now};await env.VIPOAP_DATA.put(paymentKey,JSON.stringify(payment));await env.VIPOAP_DATA.put(booking.key,JSON.stringify({...booking,paymentId:paymentKey,paymentStatus:'pending',updatedAt:now}));return Response.json({ok:true,checkoutUrl:checkout.checkoutUrl,paymentId:checkout.id})}catch(error){return Response.json({error:error.message},{status:503})}
+}
