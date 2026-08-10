@@ -4,7 +4,7 @@ const DEFAULT_AVAILABILITY={monday:[['19:00','21:00']],wednesday:[['19:00','21:0
 const DAY_NAMES=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 function clean(value,max=500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
-function reference(){return `VIP-${crypto.randomUUID().split('-')[0].toUpperCase()}`}
+async function reference(env,date){const dateCode=`${date.slice(5,7)}${date.slice(8,10)}`;for(let attempt=0;attempt<20;attempt++){const bytes=crypto.getRandomValues(new Uint16Array(1)),number=String(bytes[0]%10000).padStart(4,'0'),candidate=`VIP-${dateCode}${number}`,key=`booking-reference:${candidate}`;if(!await env.VIPOAP_DATA.get(key)){await env.VIPOAP_DATA.put(key,JSON.stringify({date,createdAt:new Date().toISOString()}));return candidate}}throw new Error('Unable to create a unique booking reference.')}
 function toMinutes(time){const [h,m]=time.split(':').map(Number);return h*60+m}
 function jsonError(error,status){return Response.json({error},{status})}
 
@@ -40,17 +40,17 @@ export async function onRequestPost({request,env}){
   const chosen=new Date(`${booking.date}T12:00:00Z`),[hour,minute]=booking.time.split(':').map(Number),start=toMinutes(booking.time),end=start+booking.duration;
   const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);
   if(Number.isNaN(chosen.getTime())||chosen.toISOString().slice(0,10)!==booking.date||booking.date<tomorrow||hour>23||minute>59||minute%30!==0)return jsonError('Please choose a valid future appointment time.',400);
-  const availabilityKeys=await env.VIPOAP_DATA.list({prefix:'availability:'}),operatorAvailability=(await Promise.all(availabilityKeys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(record=>record?.territoryId==='andover'),saved=await env.VIPOAP_DATA.get('availability','json'),settings=operatorAvailability.length?operatorAvailability.map(record=>({weekly:booking.supportType==='Remote support'?record.remoteWeekly:record.homeVisitWeekly,blockedDates:record.blockedDates||[],overrides:record.overrides||[]})):[saved||{weekly:DEFAULT_AVAILABILITY,blockedDates:[]}];
+  const availabilityKeys=await env.VIPOAP_DATA.list({prefix:'availability:'}),allOperatorAvailability=(await Promise.all(availabilityKeys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(record=>record?.territoryId==='andover'),service=booking.supportType==='Remote support'?'remote':'home',operatorAvailability=[];for(const record of allOperatorAvailability){const operator=record.operatorId?await env.VIPOAP_DATA.get(`operator:${record.operatorId}`,'json'):null,services=Array.isArray(operator?.serviceTypes)?operator.serviceTypes:['home','remote'];if(services.includes(service))operatorAvailability.push(record)}const saved=await env.VIPOAP_DATA.get('availability','json'),settings=operatorAvailability.length?operatorAvailability.map(record=>({weekly:booking.supportType==='Remote support'?record.remoteWeekly:record.homeVisitWeekly,blockedDates:record.blockedDates||[],overrides:record.overrides||[]})):allOperatorAvailability.length?[]:[saved||{weekly:DEFAULT_AVAILABILITY,blockedDates:[]}];
   const allowed=settings.some(setting=>{const override=setting.overrides?.find(item=>item.date===booking.date);if((setting.blockedDates?.includes(booking.date)||override?.status==='blocked')&&override?.status!=='available')return false;const ranges=setting.weekly?.[DAY_NAMES[chosen.getUTCDay()]]||[];return ranges.some(([from,to])=>start>=toMinutes(from)&&end<=toMinutes(to)&&(start-toMinutes(from))%30===0)});
   if(!allowed)return jsonError('That appointment time is not available. Please choose another time.',409);
   const keys=await env.VIPOAP_DATA.list({prefix:`booking:${booking.date}:`});
   const existing=(await Promise.all(keys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(Boolean).filter(item=>!['declined','cancelled'].includes(item.status));
   if(existing.some(item=>{const bookedStart=toMinutes(item.time),bookedEnd=bookedStart+Number(item.duration||30);return start<bookedEnd&&end>bookedStart}))return jsonError('That appointment has just been taken. Please choose another time.',409);
-  const ref=reference(),slotKey=`booking:${booking.date}:${booking.time}`,now=new Date().toISOString();
+  const ref=await reference(env,booking.date),slotKey=`booking:${booking.date}:${booking.time}`,now=new Date().toISOString();
   const paymentState=initialBookingState({supportType:booking.supportType,paymentMethod:'online'});
   await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,...paymentState,reference:ref,status:'pending',adminNotes:'',createdAt:now,updatedAt:now}));
   try{await sendEmails(env,booking,ref)}catch(error){
-    await env.VIPOAP_DATA.delete(slotKey);
+    await env.VIPOAP_DATA.delete(slotKey);await env.VIPOAP_DATA.delete(`booking-reference:${ref}`);
     console.error(JSON.stringify({event:'booking_email_failed',reference:ref,message:error instanceof Error?error.message:'Unknown error'}));
     return jsonError('We could not send the booking. Please try again or call 07977 254158.',502);
   }

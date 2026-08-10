@@ -51,7 +51,7 @@ test('stores an offered slot and sends the notification',async t=>{
   const response=await onRequestPost({request:request({details:'Router <script>alert(1)</script> & setup'}),env});
   const result=await response.json();
   assert.equal(response.status,200);
-  assert.match(result.reference,/^VIP-[A-F0-9]{8}$/);
+  assert.match(result.reference,/^VIP-0817\d{4}$/);
   assert.ok(values.has(`booking:${nextMonday()}:19:00`));
   const stored=JSON.parse(values.get(`booking:${nextMonday()}:19:00`));
   assert.ok(stored.customerId.startsWith('customer:'));
