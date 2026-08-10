@@ -2,7 +2,7 @@ export const PERMISSIONS=[
   'view_dashboard','manage_customers','manage_calls','manage_followups','manage_billing',
   'view_franchise','manage_territories','manage_operators','manage_roles','manage_dbs',
   'view_training','manage_training','manage_brand','export_data',
-  'report_incidents','manage_incidents','manage_recordings','manage_equipment','manage_catalogue'
+  'report_incidents','manage_incidents','manage_recordings','manage_equipment','manage_catalogue','manage_operations'
 ];
 
 export const BUILT_IN_ROLES={
