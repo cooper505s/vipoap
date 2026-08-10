@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test --test-isolation=none \"tests/*.test.mjs\""
+    "test": "node --test --test-isolation=none \"tests/*.test.mjs\"",
+    "validate:d1": "node scripts/validate-d1-schema.mjs"
   }
 }
