@@ -1,7 +1,6 @@
 import {adminContext,canAccessTerritory,assignedTerritory} from '../../_shared/admin-auth.js';
 import {hasPermission} from '../../_shared/permissions.js';
 import {ensureCustomer} from '../../_shared/customers.js';
-import {queueZohoSync} from '../../_shared/integrations.js';
 function clean(value,max=1500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
 function photos(items){let total=0;return (Array.isArray(items)?items:[]).slice(0,6).map(item=>{const data=String(item.data||'');total+=data.length;return{id:clean(item.id,60)||crypto.randomUUID(),name:clean(item.name,140),type:clean(item.type,80),size:Number(item.size)||0,takenAt:clean(item.takenAt,40)||new Date().toISOString(),data}}).filter(item=>item.name&&/^data:image\/(jpeg|png|webp);base64,/i.test(item.data)&&item.size>0&&item.size<=2097152&&total<=10485760)}
 function validDate(value){
@@ -45,7 +44,6 @@ export async function onRequestPost({request,env}){
   const now=new Date().toISOString(),reference=`CO-${crypto.randomUUID().split('-')[0].toUpperCase()}`,key=`callout:${record.date}:${crypto.randomUUID()}`;
   const territoryId=assignedTerritory(context,customer?.territoryId||requestedTerritory);if(!territoryId)return Response.json({error:'No territory is assigned to this account.'},{status:403});
   await env.VIPOAP_DATA.put(key,JSON.stringify({...record,customerId:customer?.key||'',territoryId,operatorId:context.operatorId||customer?.operatorId||'unassigned',reference,createdAt:now,updatedAt:now}));
-  await queueZohoSync(env,'callout',key);
   console.log(JSON.stringify({event:'callout_created',reference,date:record.date,status:record.status}));
   return Response.json({ok:true,key,reference});
 }
@@ -61,7 +59,6 @@ export async function onRequestPatch({request,env}){
   if(!Object.hasOwn(body,'followUpCompleted')){record.followUpCompleted=Boolean(existing.followUpCompleted);record.followUpCompletedAt=existing.followUpCompletedAt||''}
   const customer=await ensureCustomer(env,{name:record.customerName,phone:record.phone,postcode:record.postcode,territoryId:existing.territoryId,operatorId:existing.operatorId});
   await env.VIPOAP_DATA.put(key,JSON.stringify({...existing,...record,customerId:customer?.key||existing.customerId||'',territoryId:customer?.territoryId||existing.territoryId||'andover',operatorId:customer?.operatorId||existing.operatorId||'dan-stevens',updatedAt:new Date().toISOString()}));
-  await queueZohoSync(env,'callout',key);
   console.log(JSON.stringify({event:'callout_updated',reference:existing.reference,status:record.status}));
   return Response.json({ok:true,key,reference:existing.reference});
 }

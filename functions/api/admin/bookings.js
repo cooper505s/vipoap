@@ -1,5 +1,4 @@
 import {authorised} from '../../_shared/admin-auth.js';
-import {BOOKING_STATES,PAYMENT_STATES} from '../../_shared/booking-state.js';
 function clean(value,max=1000){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
 
 export async function onRequestGet({request,env}){
@@ -16,8 +15,6 @@ export async function onRequestPatch({request,env}){
   const body=await request.json(); const key=clean(body.key,200); const status=clean(body.status,20); const adminNotes=clean(body.adminNotes,1500);const cancellationReason=clean(body.cancellationReason,500);const cancellationWaived=Boolean(body.cancellationWaived);const cancellationCharge=status==='cancelled'&&!cancellationWaived?Math.max(0,Math.min(15,Number(body.cancellationCharge)||0)):0;
   if(!key.startsWith('booking:')||!['pending','confirmed','declined','completed','cancelled'].includes(status))return Response.json({error:'Invalid update.'},{status:400});
   const booking=await env.VIPOAP_DATA.get(key,'json'); if(!booking)return Response.json({error:'Booking not found.'},{status:404});
-  const bookingStatus=BOOKING_STATES.includes(body.bookingStatus)?body.bookingStatus:(status==='confirmed'?'confirmed':status==='completed'?'completed':status==='cancelled'?'cancelled':booking.bookingStatus||'requested');
-  const paymentStatus=PAYMENT_STATES.includes(body.paymentStatus)?body.paymentStatus:booking.paymentStatus||'none';
-  await env.VIPOAP_DATA.put(key,JSON.stringify({...booking,status,bookingStatus,paymentStatus,adminNotes,cancellationCharge,cancellationWaived,cancellationReason,updatedAt:new Date().toISOString()}));
+  await env.VIPOAP_DATA.put(key,JSON.stringify({...booking,status,adminNotes,cancellationCharge,cancellationWaived,cancellationReason,updatedAt:new Date().toISOString()}));
   return Response.json({ok:true});
 }
