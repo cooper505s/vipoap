@@ -1,0 +1,5 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE health_checks (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE, territory_id TEXT REFERENCES territories(id), operator_id TEXT REFERENCES operators(id), wifi_score INTEGER NOT NULL CHECK(wifi_score BETWEEN 0 AND 100), security_score INTEGER NOT NULL CHECK(security_score BETWEEN 0 AND 100), backup_score INTEGER NOT NULL CHECK(backup_score BETWEEN 0 AND 100), device_score INTEGER NOT NULL CHECK(device_score BETWEEN 0 AND 100), scam_awareness_score INTEGER NOT NULL CHECK(scam_awareness_score BETWEEN 0 AND 100), overall_score INTEGER NOT NULL CHECK(overall_score BETWEEN 0 AND 100), answers TEXT NOT NULL, observations TEXT, recommendations TEXT NOT NULL DEFAULT '[]', completed_by TEXT NOT NULL, completed_at TEXT NOT NULL, next_review_due TEXT NOT NULL);
+CREATE INDEX health_checks_customer ON health_checks(customer_id,completed_at);
+CREATE INDEX health_checks_review ON health_checks(territory_id,next_review_due);
+PRAGMA foreign_key_check;
