@@ -23,7 +23,7 @@ Cloudflare documentation: [Pages rollbacks](https://developers.cloudflare.com/pa
 
 ## Controlled Workers KV restore
 
-1. Establish a maintenance window and stop staff from updating VIPOAP OS while the restore is prepared.
+1. Establish a maintenance window. In **VIPOAP OS → Platform health**, start Maintenance mode with the incident reason. Confirm customer and staff writes return the maintenance message before preparing the restore.
 2. Keep an untouched copy of the backup in an approved protected location.
 3. Validate the backup in **VIPOAP OS → Platform health → Validate backup file**.
 4. On an authorised administration computer, prepare the Cloudflare bulk file:
@@ -34,7 +34,8 @@ Cloudflare documentation: [Pages rollbacks](https://developers.cloudflare.com/pa
 6. Take a second current backup of the affected namespace before writing, even when the data is damaged.
 7. With an API token limited to the required account and KV permissions, use the current Wrangler `kv bulk put` command against the exact production namespace. Confirm the namespace identifier independently; never infer it from a similarly named preview namespace.
 8. Validate representative customers, bookings, payments, territories and audit records before reopening writes.
-9. Delete the temporary bulk file securely after the retention decision is recorded.
+9. End Maintenance mode in VIPOAP OS and confirm a controlled test write succeeds.
+10. Delete the temporary bulk file securely after the retention decision is recorded.
 
 Cloudflare documentation: [Wrangler KV commands](https://developers.cloudflare.com/kv/reference/kv-commands/).
 
