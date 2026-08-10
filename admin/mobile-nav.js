@@ -10,3 +10,4 @@
   let prompt;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();prompt=event;const target=document.querySelector('.top .actions,.top');if(!target||document.getElementById('installOS'))return;const button=document.createElement('button');button.id='installOS';button.className='btn quiet os-install';button.textContent='Install VIPOAP OS';button.onclick=async()=>{if(!prompt)return;prompt.prompt();await prompt.userChoice;prompt=null;button.remove()};target.append(button)});
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/admin/service-worker.js');
 })();
+(function(){if(document.getElementById('connectivityStatus'))return;var script=document.createElement('script');script.src='/assets/connectivity.js';document.body.appendChild(script)})();
