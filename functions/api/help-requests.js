@@ -1,4 +1,5 @@
 import {takeRateLimit} from '../_shared/rate-limit.js';
+import {ensureCustomer} from '../_shared/customers.js';
 
 const clean=(value,max=1000)=>String(value??'').trim().replace(/[<>]/g,'').slice(0,max);
 const emailOk=value=>!value||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -55,7 +56,7 @@ export async function onRequestPost({request,env}){
   const requestData={name:clean(body.name,100),email:clean(body.email,120),phone:clean(body.phone,40),contactPreference:clean(body.contactPreference,20),category:clean(body.category,30),description:clean(body.description,2000),postcode:clean(body.postcode,20),territoryId:clean(body.territoryId||'andover',60)};
   if(!requestData.name||(!requestData.email&&!requestData.phone)||!['Email','Phone','SMS','WhatsApp'].includes(requestData.contactPreference)||!requestData.description||!emailOk(requestData.email))return Response.json({error:'Please tell us what is happening and how we can contact you.'},{status:400});
   const reference=await createReference(env),accessToken=token(),now=new Date().toISOString(),key=`help-request:${now.slice(0,10)}:${reference}`;
-  const record={...requestData,reference,status:'received',messages:[{author:'customer',text:requestData.description,createdAt:now}],createdAt:now,updatedAt:now};
+  const customer=await ensureCustomer(env,requestData),record={...requestData,customerId:customer?.key||'',reference,status:'received',messages:[{author:'customer',text:requestData.description,createdAt:now}],createdAt:now,updatedAt:now};
   await env.VIPOAP_DATA.put(key,JSON.stringify(record));
   await env.VIPOAP_DATA.put(`help-reference:${reference}`,key);
   await env.VIPOAP_DATA.put(`help-access:${await digest(accessToken)}`,key,{expirationTtl:60*60*24*365});
