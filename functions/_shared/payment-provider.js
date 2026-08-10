@@ -6,6 +6,7 @@ export async function verifyStripeSignature(secret,payload,header,toleranceSecon
 export async function createCheckout(env,payload,idempotencyKey){
   if(!env.STRIPE_SECRET_KEY)throw new Error('Stripe Checkout is not configured yet.');
   const form=new URLSearchParams({mode:'payment',client_reference_id:payload.reference,customer_email:payload.customer.email,success_url:payload.successUrl,cancel_url:payload.cancelUrl,'line_items[0][quantity]':'1','line_items[0][price_data][currency]':'gbp','line_items[0][price_data][unit_amount]':String(payload.amount),'line_items[0][price_data][product_data][name]':payload.description,'payment_intent_data[receipt_email]':payload.customer.email});
+  if(payload.expiresAt)form.set('expires_at',String(payload.expiresAt));
   for(const [key,value] of Object.entries(payload.metadata||{})){form.set(`metadata[${key}]`,String(value));form.set(`payment_intent_data[metadata][${key}]`,String(value))}
   const response=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{authorization:`Bearer ${env.STRIPE_SECRET_KEY}`,'content-type':'application/x-www-form-urlencoded','idempotency-key':idempotencyKey},body:form.toString()});
   const data=await response.json().catch(()=>({}));if(!response.ok||!data.url||!data.id)throw new Error(data.error?.message||'Unable to create Stripe Checkout.');return{id:data.id,checkoutUrl:data.url};

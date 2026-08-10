@@ -44,19 +44,19 @@ export async function onRequestPost({request,env}){
   const candidates=settings.filter(setting=>{const override=setting.overrides?.find(item=>item.date===booking.date);if((setting.blockedDates?.includes(booking.date)||override?.status==='blocked')&&override?.status!=='available')return false;const ranges=setting.weekly?.[DAY_NAMES[chosen.getUTCDay()]]||[];return ranges.some(([from,to])=>start>=toMinutes(from)&&end<=toMinutes(to)&&(start-toMinutes(from))%30===0)});
   if(!candidates.length)return jsonError('That appointment time is not available. Please choose another time.',409);
   const keys=await env.VIPOAP_DATA.list({prefix:`booking:${booking.date}:`});
-  const existing=(await Promise.all(keys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(Boolean).filter(item=>!['declined','cancelled'].includes(item.status));
+  const existing=(await Promise.all(keys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(Boolean).filter(item=>!['declined','cancelled'].includes(item.status)&&!(item.paymentStatus==='payment-required'&&item.holdExpiresAt&&new Date(item.holdExpiresAt)<=new Date()));
   const overlaps=item=>{const bookedStart=toMinutes(item.time),bookedEnd=bookedStart+Number(item.duration||30);return start<bookedEnd&&end>bookedStart},globalConflict=existing.some(item=>!item.operatorId&&!item.assignedEngineerId&&overlaps(item)),freeCandidates=globalConflict?[]:candidates.filter(candidate=>!existing.some(item=>(item.operatorId||item.assignedEngineerId)===candidate.operatorId&&overlaps(item))).sort((a,b)=>existing.filter(item=>(item.operatorId||item.assignedEngineerId)===a.operatorId).length-existing.filter(item=>(item.operatorId||item.assignedEngineerId)===b.operatorId).length||a.operatorId.localeCompare(b.operatorId));if(!freeCandidates.length)return jsonError('That appointment has just been taken. Please choose another time.',409);const selected=freeCandidates[0];
-  const ref=await reference(env,booking.date),slotKey=`booking:${booking.date}:${booking.time}:${selected.operatorId}`,now=new Date().toISOString();
+  const ref=await reference(env,booking.date),slotKey=`booking:${booking.date}:${booking.time}:${selected.operatorId}`,now=new Date().toISOString(),holdExpiresAt=new Date(Date.now()+30*60000).toISOString();
   const paymentState=initialBookingState({supportType:booking.supportType,paymentMethod:'online'});
-  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,...paymentState,reference:ref,status:'pending',adminNotes:'',territoryId:selected.territoryId,operatorId:selected.operatorId,createdAt:now,updatedAt:now}));
+  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,...paymentState,reference:ref,status:'pending',adminNotes:'',territoryId:selected.territoryId,operatorId:selected.operatorId,holdExpiresAt,createdAt:now,updatedAt:now}));
   try{await sendEmails(env,booking,ref)}catch(error){
     await env.VIPOAP_DATA.delete(slotKey);await env.VIPOAP_DATA.delete(`booking-reference:${ref}`);
     console.error(JSON.stringify({event:'booking_email_failed',reference:ref,message:error instanceof Error?error.message:'Unknown error'}));
     return jsonError('We could not send the booking. Please try again or call 07977 254158.',502);
   }
   const customer=await ensureCustomer(env,booking);
-  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,...paymentState,reference:ref,status:'pending',adminNotes:'',customerId:customer?.key||'',territoryId:selected.territoryId,operatorId:selected.operatorId,createdAt:now,updatedAt:new Date().toISOString()}));
+  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,...paymentState,reference:ref,status:'pending',adminNotes:'',customerId:customer?.key||'',territoryId:selected.territoryId,operatorId:selected.operatorId,holdExpiresAt,createdAt:now,updatedAt:new Date().toISOString()}));
   if(booking.referralCode){const referralKey=await env.VIPOAP_DATA.get(`referral-code:${booking.referralCode}`);if(referralKey){const referral=await env.VIPOAP_DATA.get(referralKey,'json');if(referral){const at=new Date().toISOString();await env.VIPOAP_DATA.put(referralKey,JSON.stringify({...referral,referredCustomerId:customer?.key||'',bookingKey:slotKey,status:'booked',history:[...(referral.history||[]),{status:'booked',at}],updatedAt:at}))}}}
   console.log(JSON.stringify({event:'booking_created',reference:ref,date:booking.date,time:booking.time,duration:booking.duration}));
-  return Response.json({ok:true,reference:ref,paymentRequired:true,paymentStatus:'payment-required'});
+  return Response.json({ok:true,reference:ref,paymentRequired:true,paymentStatus:'payment-required',holdExpiresAt});
 }

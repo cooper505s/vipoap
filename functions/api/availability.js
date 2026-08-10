@@ -11,7 +11,7 @@ export async function onRequestGet({request,env}){
   const settings=await getSettings(env,supportType),capacity=new Map();
   for(const setting of settings){if(setting.blockedDates?.includes(date)&&!setting.overrides?.some(item=>item.date===date&&item.status==='available'))continue;const ranges=setting.weekly?.[DAY_NAMES[chosen.getUTCDay()]]||[];for(const [start,end] of ranges){for(let t=start;toMinutes(t)+duration<=toMinutes(end);t=addMinutes(t,30)){if(!capacity.has(t))capacity.set(t,new Set());capacity.get(t).add(setting.operatorId)}}}
   const keys=await env.VIPOAP_DATA.list({prefix:`booking:${date}:`});
-  const booked=(await Promise.all(keys.keys.map(k=>env.VIPOAP_DATA.get(k.name,'json')))).filter(Boolean).filter(b=>!['declined','cancelled'].includes(b.status));
+  const booked=(await Promise.all(keys.keys.map(k=>env.VIPOAP_DATA.get(k.name,'json')))).filter(Boolean).filter(b=>!['declined','cancelled'].includes(b.status)&&!(b.paymentStatus==='payment-required'&&b.holdExpiresAt&&new Date(b.holdExpiresAt)<=new Date()));
   const slots=[...capacity.keys()].sort().filter(slot=>{const start=toMinutes(slot),end=start+duration,globalConflict=booked.some(b=>!b.operatorId&&!b.assignedEngineerId&&start<toMinutes(b.time)+Number(b.duration||30)&&end>toMinutes(b.time));if(globalConflict)return false;return[...capacity.get(slot)].some(operatorId=>!booked.some(b=>{const assigned=b.operatorId||b.assignedEngineerId;if(assigned!==operatorId)return false;const bs=toMinutes(b.time),be=bs+Number(b.duration||30);return start<be&&end>bs}))});
   return Response.json({slots,timezone:'Europe/London'});
 }

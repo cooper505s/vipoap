@@ -61,6 +61,7 @@ test('stores an offered slot and sends the notification',async t=>{
   assert.equal(stored.paymentMethod,'online');
   assert.equal(stored.paymentStatus,'payment-required');
   assert.equal(stored.bookingStatus,'slot-held');
+  assert.ok(new Date(stored.holdExpiresAt)>new Date());
   assert.equal(result.paymentRequired,true);
   assert.equal(emails.length,2);
   assert.doesNotMatch(emails[0].html,/<script>/);
