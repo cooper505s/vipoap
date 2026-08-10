@@ -1,4 +1,5 @@
 import {ensureCustomer} from '../_shared/customers.js';
+import {initialBookingState} from '../_shared/booking-state.js';
 const DEFAULT_AVAILABILITY={monday:[['19:00','21:00']],wednesday:[['19:00','21:00']],saturday:[['11:00','13:00'],['16:00','19:00']]};
 const DAY_NAMES=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 function clean(value,max=500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
@@ -20,7 +21,8 @@ const adminHtml=`<h2>New VIPOAP booking request</h2><p><strong>Reference:</stron
   const confirmationEmails=[booking.email,booking.bookerEmail].filter((email,index,list)=>email&&list.indexOf(email)===index);
   if(confirmationEmails.length){
     const customerHtml=`<h2>Thank you, ${safe.name}</h2><p>Your VIPOAP booking request has been received.</p><p><strong>Reference:</strong> ${escapeHtml(ref)}<br><strong>Support type:</strong> ${safe.supportType}<br><strong>Date:</strong> ${safe.date}<br><strong>Time:</strong> ${safe.time}<br><strong>Length:</strong> ${safe.duration} minutes<br><strong>Service price:</strong> ${safe.price}</p><p>Normal support is paid after the appointment. Equipment, paid software and subscriptions are separate and are only purchased with your approval; equipment is paid for before we buy it.</p><p>This is a request, not yet a confirmed appointment. Your local VIPOAP Engineer Partner will contact you to confirm it.</p><p>You can cancel free of charge until one hour before the appointment. Late cancellations and no-shows may be charged £15, although we can waive this in reasonable exceptional circumstances.</p><p>Need to change something? Call 07977 254158 or email help@vipoap.co.uk.</p>`;
-    await sendMessage(env,{from,to:confirmationEmails,subject:`We received your VIPOAP booking request ${ref}`,html:customerHtml},`${ref}-customer`);
+    const paymentHtml=customerHtml.replace('Normal support is paid after the appointment.','The booked home visit or remote session is paid securely before confirmation. Any additional time is discussed and approved first, then billed after the appointment.').replace('Your local VIPOAP Engineer Partner will contact you to confirm it.','Complete payment to keep the slot, then your local VIPOAP Engineer Partner will confirm it.');
+    await sendMessage(env,{from,to:confirmationEmails,subject:`We received your VIPOAP booking request ${ref}`,html:paymentHtml},`${ref}-customer`);
   }
 }
 
@@ -30,7 +32,7 @@ export async function onRequestPost({request,env}){
     return jsonError('Booking is temporarily unavailable. Please call 07977 254158.',503);
   }
   let body;try{body=await request.json()}catch{return jsonError('Invalid booking request.',400)}
-  const booking={referralCode:clean(body.referralCode,80),bookingFor:clean(body.bookingFor||'myself',20),supportType:clean(body.supportType||'Home visit',30),service:clean(body.service,100),duration:Number(body.duration),date:clean(body.date,10),time:clean(body.time,5),name:clean(body.name,100),phone:clean(body.phone,40),email:clean(body.email,120),address:clean(body.address,300),postcode:clean(body.postcode,20),notificationChannel:clean(body.notificationChannel||'Email',20),details:clean(body.details,1000),accessibilityNotes:clean(body.accessibilityNotes,500),bookerName:clean(body.bookerName,100),bookerPhone:clean(body.bookerPhone,40),bookerEmail:clean(body.bookerEmail,120),relationship:clean(body.relationship,80)};
+  const booking={referralCode:clean(body.referralCode,80),bookingFor:clean(body.bookingFor||'myself',20),supportType:clean(body.supportType||'Home visit',30),service:clean(body.service,100),duration:Number(body.duration),date:clean(body.date,10),time:clean(body.time,5),name:clean(body.name,100),phone:clean(body.phone,40),email:clean(body.email,120),address:clean(body.address,300),postcode:clean(body.postcode,20),notificationChannel:clean(body.notificationChannel||'Email',20),details:clean(body.details,1000),accessibilityNotes:clean(body.accessibilityNotes,500),bookerName:clean(body.bookerName,100),bookerPhone:clean(body.bookerPhone,40),bookerEmail:clean(body.bookerEmail,120),relationship:clean(body.relationship,80),paymentMethod:'online'};
   if(!['myself','someone_else'].includes(booking.bookingFor)||!['Home visit','Remote support'].includes(booking.supportType)||!booking.service||![30,60].includes(booking.duration)||(booking.supportType==='Home visit'&&booking.duration!==60)||!/^\d{4}-\d{2}-\d{2}$/.test(booking.date)||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(booking.time)||!booking.name||!booking.phone||!booking.postcode||(booking.supportType==='Home visit'&&!booking.address)||(booking.bookingFor==='someone_else'&&(!booking.bookerName||!booking.bookerPhone||!booking.relationship))||!['Email','SMS','WhatsApp','Phone'].includes(booking.notificationChannel))return jsonError('Please complete all required fields.',400);
   booking.price=booking.supportType==='Remote support'?(booking.duration===30?'£15':'£25'):'£30';
   if(booking.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email))return jsonError('Please enter a valid email address.',400);
@@ -38,22 +40,23 @@ export async function onRequestPost({request,env}){
   const chosen=new Date(`${booking.date}T12:00:00Z`),[hour,minute]=booking.time.split(':').map(Number),start=toMinutes(booking.time),end=start+booking.duration;
   const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);
   if(Number.isNaN(chosen.getTime())||chosen.toISOString().slice(0,10)!==booking.date||booking.date<tomorrow||hour>23||minute>59||minute%30!==0)return jsonError('Please choose a valid future appointment time.',400);
-  const saved=await env.VIPOAP_DATA.get('availability','json'),settings=saved||{weekly:DEFAULT_AVAILABILITY,blockedDates:[]};
-  const ranges=settings.weekly?.[DAY_NAMES[chosen.getUTCDay()]]||[],allowed=!settings.blockedDates?.includes(booking.date)&&ranges.some(([from,to])=>start>=toMinutes(from)&&end<=toMinutes(to)&&(start-toMinutes(from))%30===0);
+  const availabilityKeys=await env.VIPOAP_DATA.list({prefix:'availability:'}),operatorAvailability=(await Promise.all(availabilityKeys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(record=>record?.territoryId==='andover'),saved=await env.VIPOAP_DATA.get('availability','json'),settings=operatorAvailability.length?operatorAvailability.map(record=>({weekly:booking.supportType==='Remote support'?record.remoteWeekly:record.homeVisitWeekly,blockedDates:record.blockedDates||[],overrides:record.overrides||[]})):[saved||{weekly:DEFAULT_AVAILABILITY,blockedDates:[]}];
+  const allowed=settings.some(setting=>{const override=setting.overrides?.find(item=>item.date===booking.date);if((setting.blockedDates?.includes(booking.date)||override?.status==='blocked')&&override?.status!=='available')return false;const ranges=setting.weekly?.[DAY_NAMES[chosen.getUTCDay()]]||[];return ranges.some(([from,to])=>start>=toMinutes(from)&&end<=toMinutes(to)&&(start-toMinutes(from))%30===0)});
   if(!allowed)return jsonError('That appointment time is not available. Please choose another time.',409);
   const keys=await env.VIPOAP_DATA.list({prefix:`booking:${booking.date}:`});
   const existing=(await Promise.all(keys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(Boolean).filter(item=>!['declined','cancelled'].includes(item.status));
   if(existing.some(item=>{const bookedStart=toMinutes(item.time),bookedEnd=bookedStart+Number(item.duration||30);return start<bookedEnd&&end>bookedStart}))return jsonError('That appointment has just been taken. Please choose another time.',409);
   const ref=reference(),slotKey=`booking:${booking.date}:${booking.time}`,now=new Date().toISOString();
-  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,reference:ref,status:'pending',adminNotes:'',createdAt:now,updatedAt:now}));
+  const paymentState=initialBookingState({supportType:booking.supportType,paymentMethod:'online'});
+  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,...paymentState,reference:ref,status:'pending',adminNotes:'',createdAt:now,updatedAt:now}));
   try{await sendEmails(env,booking,ref)}catch(error){
     await env.VIPOAP_DATA.delete(slotKey);
     console.error(JSON.stringify({event:'booking_email_failed',reference:ref,message:error instanceof Error?error.message:'Unknown error'}));
     return jsonError('We could not send the booking. Please try again or call 07977 254158.',502);
   }
   const customer=await ensureCustomer(env,booking);
-  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,reference:ref,status:'pending',adminNotes:'',customerId:customer?.key||'',territoryId:customer?.territoryId||'andover',operatorId:customer?.operatorId||'dan-stevens',createdAt:now,updatedAt:new Date().toISOString()}));
+  await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...booking,...paymentState,reference:ref,status:'pending',adminNotes:'',customerId:customer?.key||'',territoryId:customer?.territoryId||'andover',operatorId:customer?.operatorId||'dan-stevens',createdAt:now,updatedAt:new Date().toISOString()}));
   if(booking.referralCode){const referralKey=await env.VIPOAP_DATA.get(`referral-code:${booking.referralCode}`);if(referralKey){const referral=await env.VIPOAP_DATA.get(referralKey,'json');if(referral){const at=new Date().toISOString();await env.VIPOAP_DATA.put(referralKey,JSON.stringify({...referral,referredCustomerId:customer?.key||'',bookingKey:slotKey,status:'booked',history:[...(referral.history||[]),{status:'booked',at}],updatedAt:at}))}}}
   console.log(JSON.stringify({event:'booking_created',reference:ref,date:booking.date,time:booking.time,duration:booking.duration}));
-  return Response.json({ok:true,reference:ref});
+  return Response.json({ok:true,reference:ref,paymentRequired:true,paymentStatus:'payment-required'});
 }

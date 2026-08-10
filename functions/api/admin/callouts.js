@@ -38,7 +38,9 @@ export async function onRequestPost({request,env}){
   const context=await adminContext(request,env);if(!hasPermission(context,'manage_calls'))return Response.json({error:'Unauthorised'},{status:401});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
   let body;try{body=await request.json()}catch{return Response.json({error:'Invalid call-out record.'},{status:400})}
-  const record=normalise(body);if(record.paymentMethod==='cash'&&record.paymentStatus==='paid'&&!record.cashRecordedAt)record.cashRecordedAt=new Date().toISOString();const error=validate(record);if(error)return Response.json({error},{status:400});
+  const record=normalise(body),billingAccess=hasPermission(context,'manage_billing'),linkedBooking=record.linkedBookingKey?await env.VIPOAP_DATA.get(record.linkedBookingKey,'json'):null;
+  if(!billingAccess){record.amountCharged=Number(String(linkedBooking?.price||'0').replace(/[^0-9.]/g,''))||0;record.paymentStatus=linkedBooking?.paymentStatus==='prepaid'?'paid':'unpaid';record.paymentMethod=linkedBooking?.paymentMethod||'online';record.cashRecordedAt=''}
+  if(record.paymentMethod==='cash'&&record.paymentStatus==='paid'&&!record.cashRecordedAt)record.cashRecordedAt=new Date().toISOString();const error=validate(record);if(error)return Response.json({error},{status:400});
   const requestedTerritory=assignedTerritory(context,env.DEFAULT_TERRITORY_ID||'andover');if(!requestedTerritory)return Response.json({error:'No territory is assigned to this account.'},{status:403});
   const customer=await ensureCustomer(env,{name:record.customerName,phone:record.phone,postcode:record.postcode,territoryId:requestedTerritory,operatorId:context.operatorId});
   const now=new Date().toISOString(),reference=`CO-${crypto.randomUUID().split('-')[0].toUpperCase()}`,key=`callout:${record.date}:${crypto.randomUUID()}`;
@@ -50,6 +52,7 @@ export async function onRequestPost({request,env}){
 
 export async function onRequestPatch({request,env}){
   const context=await adminContext(request,env);if(!hasPermission(context,'manage_calls'))return Response.json({error:'Unauthorised'},{status:401});
+  if(!hasPermission(context,'manage_billing'))return Response.json({error:'Completed call records and payment details can only be amended by VIPOAP HQ.'},{status:403});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
   let body;try{body=await request.json()}catch{return Response.json({error:'Invalid call-out record.'},{status:400})}
   const key=clean(body.key,250);if(!key.startsWith('callout:'))return Response.json({error:'Invalid call-out key.'},{status:400});

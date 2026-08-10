@@ -56,6 +56,10 @@ test('stores an offered slot and sends the notification',async t=>{
   const stored=JSON.parse(values.get(`booking:${nextMonday()}:19:00`));
   assert.ok(stored.customerId.startsWith('customer:'));
   assert.equal(stored.territoryId,'andover');
+  assert.equal(stored.paymentMethod,'online');
+  assert.equal(stored.paymentStatus,'payment-required');
+  assert.equal(stored.bookingStatus,'slot-held');
+  assert.equal(result.paymentRequired,true);
   assert.equal(emails.length,2);
   assert.doesNotMatch(emails[0].html,/<script>/);
   assert.match(emails[0].html,/&amp;/);
