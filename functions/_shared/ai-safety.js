@@ -1,0 +1,5 @@
+const highRisk=[/password|passcode|pin\b|one[- ]?time code|security answer/i,/bank|card details|payment code|transfer money/i,/remote access|anydesk|teamviewer|screen share/i,/suicid|self[- ]?harm|hurt myself/i,/fire|gas leak|immediate danger|medical emergency/i];
+const unsafeOutput=[/send|share|tell.{0,20}(password|passcode|pin|security code)/i,/disable.{0,20}(antivirus|firewall|security)/i,/allow.{0,20}(unattended|permanent) remote access/i,/guaranteed safe|definitely not a scam/i];
+export function assessQuestion(text){const urgent=/fire|gas leak|immediate danger|medical emergency|suicid|self[- ]?harm|hurt myself/i.test(text),sensitive=highRisk.some(pattern=>pattern.test(text));return{sensitive,urgent}}
+export function safeAnswer(text){return Boolean(text&&text.length<=1800&&!unsafeOutput.some(pattern=>pattern.test(text)))}
+export const safetyFallback=({urgent=false}={})=>urgent?'Stop troubleshooting and contact the appropriate emergency service now. If there is immediate danger in the UK, call 999.':'For your safety, do not share passwords, PINs, payment codes or remote-access details. Stop here and ask a VIPOAP Engineer Partner to help.';
