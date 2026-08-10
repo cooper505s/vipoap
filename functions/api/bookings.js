@@ -1,5 +1,6 @@
 import {ensureCustomer} from '../_shared/customers.js';
 import {initialBookingState} from '../_shared/booking-state.js';
+import {takeRateLimit} from '../_shared/rate-limit.js';
 const DEFAULT_AVAILABILITY={monday:[['19:00','21:00']],wednesday:[['19:00','21:00']],saturday:[['11:00','13:00'],['16:00','19:00']]};
 const DAY_NAMES=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 function clean(value,max=500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
@@ -37,6 +38,7 @@ export async function onRequestPost({request,env}){
   booking.price=booking.supportType==='Remote support'?(booking.duration===30?'£15':'£25'):'£30';
   if(booking.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email))return jsonError('Please enter a valid email address.',400);
   if(booking.bookerEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.bookerEmail))return jsonError('Please enter a valid booker email address.',400);
+  const clientIp=request.headers.get('CF-Connecting-IP')||request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();if(clientIp){const rate=await takeRateLimit(env.VIPOAP_DATA,{scope:'public-booking',identifier:clientIp,limit:5,windowSeconds:3600});if(!rate.allowed)return new Response(JSON.stringify({error:'Too many booking attempts. Please wait before trying again, or call 07977 254158.'}),{status:429,headers:{'content-type':'application/json','retry-after':String(rate.retryAfter)}})}
   const chosen=new Date(`${booking.date}T12:00:00Z`),[hour,minute]=booking.time.split(':').map(Number),start=toMinutes(booking.time),end=start+booking.duration;
   const tomorrow=new Date(Date.now()+86400000).toISOString().slice(0,10);
   if(Number.isNaN(chosen.getTime())||chosen.toISOString().slice(0,10)!==booking.date||booking.date<tomorrow||hour>23||minute>59||minute%30!==0)return jsonError('Please choose a valid future appointment time.',400);
