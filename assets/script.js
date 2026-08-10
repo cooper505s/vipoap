@@ -1,4 +1,13 @@
 (function () {
+  var main = document.querySelector('main');
+  if (main && !document.querySelector('.skip-link')) {
+    if (!main.id) main.id = 'main-content';
+    var skip = document.createElement('a');
+    skip.className = 'skip-link';
+    skip.href = '#' + main.id;
+    skip.textContent = 'Skip to main content';
+    document.body.insertBefore(skip, document.body.firstChild);
+  }
   var savedStep = parseFloat(localStorage.getItem('vipoapTextSize') || '1');
   var step = Math.min(1.35, Math.max(0.85, savedStep));
   document.documentElement.style.setProperty('--step', step);

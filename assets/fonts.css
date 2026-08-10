@@ -6,3 +6,14 @@
   font-display: swap;
   src: url("fonts/quicksand-latin.woff2") format("woff2");
 }
+
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible {
+  outline: 3px solid #246bce !important;
+  outline-offset: 3px !important;
+}
+.skip-link{position:fixed;z-index:10000;left:12px;top:12px;transform:translateY(-160%);background:#102957;color:#fff;padding:12px 18px;border-radius:8px;font-weight:800;text-decoration:none}
+.skip-link:focus{transform:translateY(0)}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *,*::before,*::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
