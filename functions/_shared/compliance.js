@@ -9,3 +9,4 @@ export function operatorCompliance(operator,now=new Date()){
   ],blocking=checks.filter(item=>['missing','expired'].includes(item.status)),warnings=checks.filter(item=>item.status==='expiring');
   return{operatorId:operator.id,name:operator.name,territoryIds:operator.territoryIds||[],operatorStatus:operator.status||'invited',workAuthorised:(operator.status||'invited')==='active'&&!blocking.length,status:blocking.length?'blocked':warnings.length?'expiring':'current',blockingCount:blocking.length,warningCount:warnings.length,checks};
 }
+export function operatorCanReceiveWork(operator,now=new Date()){const lifecycleStarted=['trainingStatus','dbsStatus','photoStatus','agreementStatus','insuranceStatus'].some(field=>field in (operator||{}));return lifecycleStarted?operatorCompliance(operator,now).workAuthorised:(operator?.status||'active')==='active'}
