@@ -20,3 +20,21 @@ export async function onRequestPatch({request,env}){
   const updated={...record,status,storageKey:clean(body.storageKey||record.storageKey,300),preserveUntil:action==='preserve'?clean(body.preserveUntil,40):record.preserveUntil,updatedAt:now,history:[...(record.history||[]),{event:action,at:now}]};
   await env.VIPOAP_DATA.put(key,JSON.stringify(updated));return Response.json({ok:true,record:updated});
 }
+
+export async function onRequestPut({request,env}){
+  if(!await authorised(request,env,'manage_recordings'))return Response.json({error:'Unauthorised'},{status:401});
+  if(!env.REMOTE_RECORDINGS)return Response.json({error:'Private recording storage is not configured.'},{status:503});
+  const key=clean(new URL(request.url).searchParams.get('key'),200),record=key.startsWith('recording:')?await env.VIPOAP_DATA.get(key,'json'):null,type=clean(request.headers.get('content-type'),80),size=Number(request.headers.get('content-length'));
+  if(!record?.consent)return Response.json({error:'A consented recording session is required.'},{status:409});
+  if(!['video/webm','audio/webm','video/mp4'].includes(type)||!Number.isFinite(size)||size<1||size>100*1024*1024)return Response.json({error:'Upload a WebM or MP4 recording no larger than 100 MB.'},{status:400});
+  const data=await request.arrayBuffer();if(data.byteLength!==size)return Response.json({error:'The recording upload was incomplete.'},{status:400});
+  const objectKey=`remote-support/${record.bookingKey.replace(/[^a-zA-Z0-9_-]/g,'_')}/${record.id||key.slice(10)}.${type==='video/mp4'?'mp4':'webm'}`,now=new Date(),retention=Math.max(30,Math.min(365,Number(env.RECORDING_RETENTION_DAYS)||90)),preserveUntil=new Date(now.getTime()+retention*86400000).toISOString();
+  const object=await env.REMOTE_RECORDINGS.put(objectKey,data,{httpMetadata:{contentType:type,contentDisposition:'attachment; filename="VIPOAP-remote-support-recording"',cacheControl:'private, no-store'},customMetadata:{recordingKey:key,bookingKey:record.bookingKey,consentedAt:record.consentedAt}});
+  const updated={...record,status:'complete',storageKey:objectKey,contentType:type,size:object.size,etag:object.etag,preserveUntil,uploadedAt:now.toISOString(),updatedAt:now.toISOString(),history:[...(record.history||[]),{event:'recording-uploaded',at:now.toISOString()}]};await env.VIPOAP_DATA.put(key,JSON.stringify(updated));return Response.json({ok:true,record:updated});
+}
+
+export async function onRequestGet({request,env}){
+  if(!await authorised(request,env,'manage_recordings'))return Response.json({error:'Unauthorised'},{status:401});const url=new URL(request.url),key=clean(url.searchParams.get('key'),200);
+  if(key){const record=key.startsWith('recording:')?await env.VIPOAP_DATA.get(key,'json'):null;if(!record?.storageKey||!env.REMOTE_RECORDINGS)return Response.json({error:'Recording file not found.'},{status:404});const object=await env.REMOTE_RECORDINGS.get(record.storageKey);if(!object)return Response.json({error:'Recording file not found.'},{status:404});const headers=new Headers({'cache-control':'private, no-store','content-disposition':`attachment; filename="VIPOAP-${clean(record.bookingKey,80)}.webm"`});object.writeHttpMetadata(headers);headers.set('etag',object.httpEtag);return new Response(object.body,{headers})}
+  const page=await env.VIPOAP_DATA.list({prefix:'recording:'}),recordings=(await Promise.all(page.keys.map(async item=>({key:item.name,...await env.VIPOAP_DATA.get(item.name,'json')})))).filter(Boolean).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));return Response.json({recordings});
+}
