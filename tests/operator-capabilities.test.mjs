@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {onRequestPatch} from '../functions/api/admin/operators.js';
+
+function setup(){const values=new Map([['operator:alex',JSON.stringify({id:'alex',name:'Alex',email:'alex@example.test',role:'operator',status:'active',territoryIds:['andover'],serviceTypes:['home','remote']})]]);return{values,env:{ADMIN_PASSWORD:'secret',VIPOAP_DATA:{async get(key,type){const value=values.get(key);return type==='json'&&value?JSON.parse(value):value??null},async put(key,value){values.set(key,value)},async list({prefix}){return{keys:[...values.keys()].filter(key=>key.startsWith(prefix)).map(name=>({name}))}}}}}}
+test('HQ suspension removes only that service from new allocation eligibility',async()=>{const{env,values}=setup(),request=new Request('https://example.test/api/admin/operators',{method:'PATCH',headers:{'content-type':'application/json','x-admin-password':'secret'},body:JSON.stringify({key:'operator:alex',homeSuspended:true})}),response=await onRequestPatch({request,env}),operator=JSON.parse(values.get('operator:alex'));assert.equal(response.status,200);assert.equal(operator.homeSuspended,true);assert.equal(operator.remoteSuspended,false);assert.deepEqual(operator.configuredServiceTypes,['home','remote']);assert.deepEqual(operator.serviceTypes,['remote'])});
