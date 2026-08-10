@@ -28,6 +28,7 @@ function environment(){
     }
   };
 }
+function storedBookings(values){return[...values.entries()].filter(([key])=>key.startsWith(`booking:${nextMonday()}:`)).map(([,value])=>JSON.parse(value))}
 
 test('fails safely when required bindings are missing',async()=>{
   const response=await onRequestPost({request:request(),env:{}});
@@ -51,9 +52,10 @@ test('stores an offered slot and sends the notification',async t=>{
   const response=await onRequestPost({request:request({details:'Router <script>alert(1)</script> & setup'}),env});
   const result=await response.json();
   assert.equal(response.status,200);
-  assert.match(result.reference,/^VIP-0817\d{4}$/);
-  assert.ok(values.has(`booking:${nextMonday()}:19:00`));
-  const stored=JSON.parse(values.get(`booking:${nextMonday()}:19:00`));
+  const dateCode=`${nextMonday().slice(5,7)}${nextMonday().slice(8,10)}`;
+  assert.match(result.reference,new RegExp(`^VIP-${dateCode}\\d{4}$`));
+  assert.equal(storedBookings(values).length,1);
+  const [stored]=storedBookings(values);
   assert.ok(stored.customerId.startsWith('customer:'));
   assert.equal(stored.territoryId,'andover');
   assert.equal(stored.paymentMethod,'online');
@@ -72,7 +74,7 @@ test('prices and stores a 30-minute remote-support request',async t=>{
   globalThis.fetch=async()=>new Response(null,{status:202});t.after(()=>{globalThis.fetch=originalFetch});
   const response=await onRequestPost({request:request({supportType:'Remote support',duration:30,address:''}),env});
   assert.equal(response.status,200);
-  const stored=JSON.parse(values.get(`booking:${nextMonday()}:19:00`));
+  const [stored]=storedBookings(values);
   assert.equal(stored.supportType,'Remote support');
   assert.equal(stored.price,'£15');
 });
@@ -82,7 +84,7 @@ test('stores an authorised family contact when booking for someone else',async t
   globalThis.fetch=async(_url,options)=>{emails.push(JSON.parse(options.body));return new Response(null,{status:202})};t.after(()=>{globalThis.fetch=originalFetch});
   const response=await onRequestPost({request:request({bookingFor:'someone_else',bookerName:'Alex Customer',bookerPhone:'07123 456789',bookerEmail:'alex@example.com',relationship:'Daughter'}),env});
   assert.equal(response.status,200);
-  const stored=JSON.parse(values.get(`booking:${nextMonday()}:19:00`));
+  const [stored]=storedBookings(values);
   assert.equal(stored.bookingFor,'someone_else');
   assert.equal(stored.bookerName,'Alex Customer');
   assert.match(emails[0].html,/Authorised family\/contact/);
@@ -97,5 +99,7 @@ test('removes the reservation when email delivery fails',async t=>{
 
   const response=await onRequestPost({request:request(),env});
   assert.equal(response.status,502);
-  assert.equal(values.has(`booking:${nextMonday()}:19:00`),false);
+  assert.equal(storedBookings(values).length,0);
 });
+
+test('matches simultaneous bookings to separate eligible engineers',async t=>{const{env,values}=environment(),weekly={monday:[['19:00','21:00']]};for(const id of ['engineer-one','engineer-two']){values.set(`operator:${id}`,JSON.stringify({id,serviceTypes:['home']}));values.set(`availability:andover:${id}`,JSON.stringify({territoryId:'andover',operatorId:id,homeVisitWeekly:weekly,remoteWeekly:{},blockedDates:[]}))}const originalFetch=globalThis.fetch;globalThis.fetch=async()=>new Response(null,{status:202});t.after(()=>{globalThis.fetch=originalFetch});let response=await onRequestPost({request:request({name:'First Customer',email:'first@example.com'}),env});assert.equal(response.status,200);response=await onRequestPost({request:request({name:'Second Customer',email:'second@example.com',phone:'01234 111111',address:'2 Test Street'}),env});assert.equal(response.status,200);const bookings=storedBookings(values);assert.equal(bookings.length,2);assert.deepEqual(new Set(bookings.map(item=>item.operatorId)),new Set(['engineer-one','engineer-two']));response=await onRequestPost({request:request({name:'Third Customer',email:'third@example.com',phone:'01234 222222',address:'3 Test Street'}),env});assert.equal(response.status,409)});
