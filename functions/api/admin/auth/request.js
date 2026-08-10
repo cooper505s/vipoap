@@ -1,4 +1,5 @@
 import {digest} from '../../../_shared/admin-auth.js';
+import {takeRateLimit} from '../../../_shared/rate-limit.js';
 
 const OWNER_EMAIL='admin@vipoap.co.uk';
 async function operatorForEmail(env,email){
@@ -17,6 +18,7 @@ async function operatorForEmail(env,email){
 export async function onRequestPost({request,env}){
   if(!env.VIPOAP_DATA||!env.RESEND_API_KEY||!env.BOOKING_FROM_EMAIL)return Response.json({error:'Email login is not configured.'},{status:500});
   let body={};try{body=await request.json()}catch{}
+  const client=request.headers.get('CF-Connecting-IP')||request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();if(client){const rate=await takeRateLimit(env.VIPOAP_DATA,{scope:'admin-login-request',identifier:client,limit:10,windowSeconds:3600});if(!rate.allowed)return new Response(JSON.stringify({error:'Too many sign-in requests. Please wait before trying again.'}),{status:429,headers:{'content-type':'application/json','retry-after':String(rate.retryAfter)}})}
   const email=String(body.email||OWNER_EMAIL).trim().toLowerCase();
   const account=await operatorForEmail(env,email);
   const generic={ok:true,message:'If that email is authorised, a six-digit sign-in code will arrive shortly.'};
