@@ -19,7 +19,47 @@ export function resolveBookingService({service,supportType,duration}){
 export function resolveBookingPricing({supportType,duration}){
   const fulfilment=fulfilmentType(supportType),rule=LEGACY_PRICING[fulfilment]?.[Number(duration)];
   if(!rule)return null;
-  return{pricingRuleId:`legacy-${fulfilment}-${duration}`,billingModel:'fixed',currency:'GBP',...rule,price:money(rule.customerPence)};
+  return{pricingRuleId:`legacy-${fulfilment}-${duration}`,billingModel:'fixed',currency:'GBP',...rule,price:money(rule.customerPence),source:'legacy'};
+}
+
+export async function resolveBookingPricingFromEnvironment(env,{categoryId,serviceId,supportType,duration,territoryId='andover'}){
+  const fallback=resolveBookingPricing({supportType,duration});
+  if(!env?.VIPOAP_DB||!serviceId)return fallback;
+  try{
+    const fulfilment=fulfilmentType(supportType),today=new Date().toISOString().slice(0,10),row=await env.VIPOAP_DB.prepare(`
+      SELECT id,billing_model,currency,customer_base_pence,customer_increment_pence,base_minutes,increment_minutes,
+             provider_base_pence,provider_increment_pence,platform_fee_mode,platform_fee_value
+      FROM pricing_rules
+      WHERE status='active'
+        AND fulfilment_type=?1
+        AND (service_id=?2 OR (service_id IS NULL AND category_id=?3))
+        AND (territory_id=?4 OR territory_id IS NULL)
+        AND (valid_from IS NULL OR valid_from<=?5)
+        AND (valid_to IS NULL OR valid_to>=?5)
+      ORDER BY CASE WHEN service_id=?2 THEN 0 ELSE 1 END,
+               CASE WHEN territory_id=?4 THEN 0 ELSE 1 END,
+               valid_from DESC
+      LIMIT 1
+    `).bind(fulfilment,serviceId,categoryId,territoryId,today).first();
+    if(!row)return fallback;
+    const minutes=Number(duration),baseMinutes=Number(row.base_minutes||minutes||0),incrementMinutes=Number(row.increment_minutes||0);
+    let customerPence=Number(row.customer_base_pence||0),providerEntitlementPence=Number(row.provider_base_pence||0);
+    if(row.billing_model==='time_blocks'&&incrementMinutes>0&&minutes>baseMinutes){
+      const blocks=Math.ceil((minutes-baseMinutes)/incrementMinutes);
+      customerPence+=blocks*Number(row.customer_increment_pence||0);
+      providerEntitlementPence+=blocks*Number(row.provider_increment_pence||0);
+    }else if(row.billing_model==='hourly'&&minutes>0){
+      customerPence=Math.round(Number(row.customer_base_pence||0)*(minutes/60));
+      providerEntitlementPence=Math.round(Number(row.provider_base_pence||0)*(minutes/60));
+    }
+    let platformFeePence=Math.max(0,customerPence-providerEntitlementPence);
+    if(row.platform_fee_mode==='fixed')platformFeePence=Number(row.platform_fee_value||0);
+    if(row.platform_fee_mode==='percentage')platformFeePence=Math.round(customerPence*(Number(row.platform_fee_value||0)/10000));
+    return{pricingRuleId:row.id,billingModel:row.billing_model,currency:row.currency||'GBP',customerPence,providerEntitlementPence,platformFeePence,price:money(customerPence),source:'d1'};
+  }catch(error){
+    console.error(JSON.stringify({event:'pricing_rule_lookup_failed',serviceId,territoryId,message:error instanceof Error?error.message:'Unknown error'}));
+    return fallback;
+  }
 }
 
 function postcodeMatches(postcode,patterns=[]){
