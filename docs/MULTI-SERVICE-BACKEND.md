@@ -2,7 +2,7 @@
 
 ## Decision
 
-VIPOAP remains **Technology-only at launch**. The backend is being made category-neutral so additional home-service categories can be introduced later without rebuilding bookings, provider profiles, coverage, pricing, payments, reviews or reporting.
+VIPOAP remains **Technology-only at launch**. The backend is category-neutral so additional home-service categories can be introduced later without rebuilding bookings, provider profiles, coverage, pricing, payments, reviews or reporting.
 
 No future trade category should be made customer-visible until it has its own commercial, insurance, credential, safeguarding and regulatory review.
 
@@ -10,12 +10,26 @@ No future trade category should be made customer-visible until it has its own co
 
 Existing code and tables use `operator` and `Engineer Partner`. These remain supported for compatibility during the Technology launch.
 
-New backend concepts use **provider** as the generic term. A provider may later be approved for one or more services/categories. We should migrate customer-facing Technology wording separately rather than performing a risky global rename.
+New backend concepts use **provider** as the generic term. A provider may later be approved for one or more services/categories. Customer-facing Technology wording can migrate separately rather than performing a risky global rename.
+
+## Active Technology pricing
+
+Home visits now use the marketplace launch model:
+
+- first 30 minutes: customer £39 / provider £25 / VIPOAP gross fee £14
+- 60 minutes: customer £64 / provider £45 / VIPOAP gross fee £19
+- 90 minutes: customer £89 / provider £65 / VIPOAP gross fee £24
+- 120 minutes: customer £114 / provider £85 / VIPOAP gross fee £29
+- each additional 30 minutes after the first block adds £25 customer price and £20 provider entitlement
+
+Remote support remains on the existing launch prices until separately revised: £15 for 30 minutes and £25 for 60 minutes.
+
+Customer amounts, provider entitlements and VIPOAP fees are stored independently so VAT/payment/accounting treatment can be applied to the correct supply once the final marketplace structure is signed off.
 
 ## Core entities
 
 ### service_categories
-Top-level service family. Only `technology` is seeded and active.
+Top-level service family. Only `technology` is active.
 
 ### services
 Bookable capabilities within a category. Services carry fulfilment modes and duration constraints rather than hard-coding these into the UI.
@@ -39,7 +53,7 @@ This table is deliberately independent from the payment processor. Stripe IDs ar
 
 ## Stripe Connect direction
 
-The schema is Connect-ready but the current payment flow remains unchanged until the legal/accounting marketplace structure is confirmed.
+The schema is Connect-ready but Connect settlement is not yet enabled.
 
 Provider records can hold:
 
@@ -52,50 +66,41 @@ When Connect is enabled, the implementation should calculate the commercial spli
 
 Do not infer tax treatment merely from the Stripe transfer configuration. Contractual supplier/agent status, invoices, terms and actual operating behaviour must remain aligned with the approved legal/accounting model.
 
-## Technology launch pricing
-
-Pricing must move out of hard-coded booking handlers into `pricing_rules` before Connect goes live. This lets VIPOAP test prices without deployments and lets future categories use different commercial models.
-
-The currently discussed £39 first 30 minutes + £25 per additional 30 minutes model is a commercial proposal, not seeded by this migration, because existing live booking pages currently use different prices. Change customer pricing only as a coordinated frontend/backend release.
-
 ## Booking evolution
 
-Existing bookings remain compatible. New columns allow each booking to reference:
+Existing booking records remain readable. New bookings also reference/store:
 
-- category
-- service
-- assigned provider
-- pricing rule
+- category ID
+- service ID
+- assigned provider ID
+- pricing rule ID
+- customer amount
 - provider entitlement
 - platform fee
 
-The legacy text `service` and `operator_id` fields remain during migration.
+The legacy text `service` and `operatorId` fields remain during migration.
 
-Recommended implementation sequence:
+## Current Technology catalogue
 
-1. Deploy schema migration.
-2. Add a read-only service catalog API returning only `active` categories/services.
-3. Map existing Technology booking labels to service IDs.
-4. Add pricing-rule resolver and persist price breakdown on new bookings.
-5. Move availability matching from generic operator service types to provider-service + coverage matching.
-6. Add assignment offer/accept workflow.
-7. Complete accountant/solicitor review of marketplace/agency model.
-8. Enable Stripe Connect onboarding and marketplace settlement.
-9. Add provider earnings/transaction statements.
-10. Only then prepare any additional service category behind `disabled`/`internal` status.
+All customer-facing booking labels map to stable services, including Wi-Fi & Broadband, Phone or Tablet Setup, Smart TV or Smart Home, Internet Safety, Printer & Scanning and General Technology Help.
+
+Only Technology is active. Future categories must be added behind `disabled` or `internal` status first.
+
+## Recommended implementation sequence
+
+1. Deploy schema migrations and active pricing.
+2. Use the shared service catalogue throughout the public booking UI.
+3. Move availability matching fully onto provider-service + coverage records.
+4. Add assignment offer/accept/decline/expiry workflow.
+5. Complete accountant/solicitor review of marketplace/agency model.
+6. Enable Stripe Connect onboarding and marketplace settlement.
+7. Add provider earnings/transaction statements.
+8. Only then prepare any additional service category behind `disabled`/`internal` status.
 
 ## Rules for future categories
 
 A future category should be data/configuration first, not a new set of bespoke booking tables.
 
-Each category may define:
-
-- its services
-- fulfilment modes
-- pricing rules
-- provider credentials
-- service areas
-- insurance requirements
-- booking questions through metadata/configuration
+Each category may define its services, fulfilment modes, pricing rules, provider credentials, service areas, insurance requirements and booking questions through metadata/configuration.
 
 Regulated work must never be enabled merely by adding a category row. Category launch requires explicit validation and provider credential rules.
