@@ -19,11 +19,17 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
       - name: Run complete platform suite
         run: npm test
-      - name: Check committed files for whitespace errors
+      - name: Check PR head commit for whitespace errors
+        if: github.event_name == 'pull_request'
+        run: git show --check --oneline --no-renames "${{ github.event.pull_request.head.sha }}"
+      - name: Check pushed commit for whitespace errors
+        if: github.event_name == 'push'
         run: git show --check --oneline --no-renames HEAD
