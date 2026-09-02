@@ -1,4 +1,9 @@
 (function () {
+  if(!document.querySelector('link[data-vipoap-high-contrast]')){
+    var contrastCss=document.createElement('link');
+    contrastCss.rel='stylesheet';contrastCss.href='assets/high-contrast.css';contrastCss.dataset.vipoapHighContrast='true';
+    document.head.appendChild(contrastCss);
+  }
   var main = document.querySelector('main');
   if (main && !document.querySelector('.skip-link')) {
     if (!main.id) main.id = 'main-content';
