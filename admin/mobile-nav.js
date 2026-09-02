@@ -3,9 +3,21 @@
   style.textContent='.os-mobile-nav{display:none}.os-install{white-space:nowrap}@media(max-width:720px){body{padding-bottom:78px!important}.os-mobile-nav{position:fixed;display:grid;grid-template-columns:repeat(7,1fr);left:0;right:0;bottom:0;z-index:1000;background:#fff;border-top:1px solid #dfe7dd;padding:7px 4px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -5px 18px rgba(16,41,87,.08)}.os-mobile-nav a{display:grid;gap:2px;text-align:center;padding:8px 2px;border-radius:10px;color:#667085;text-decoration:none;font-size:10px;font-weight:800}.os-mobile-nav a span{font-size:19px;line-height:1}.os-mobile-nav a.active{color:#102957;background:#eaf1fb}}';
   document.head.append(style);
   const path=location.pathname.replace(/\.html$/,'').replace(/\/$/,'')||'/admin',logging=path==='/admin'&&location.hash==='#calloutEditor',knowledge=path==='/admin/knowledge';
-  const items=[['/admin/os','⌂','Overview'],['/admin/customers','♟','Customers'],['/admin','▣','Visits'],['/admin/help-requests','?','Help'],['/admin/billing','£','Billing'],['/admin/safety','!','Safety'],['/admin/training','✓','Training']];
-  const nav=document.createElement('nav');nav.className='os-mobile-nav';nav.setAttribute('aria-label','VIPOAP OS');
-  nav.innerHTML=items.map(([href,icon,label])=>{const target=href.replace(/\/$/,'').split('#')[0],active=label==='Log visit'?logging:label==='Visits'?(path===target&&!logging):label==='Training'?(path===target||knowledge):path===target;return`<a href="${href}" class="${active?'active':''}"><span>${icon}</span>${label}</a>`}).join('');document.body.append(nav);
+  const primary=[['/admin/os','⌂','Overview'],['/admin/customers','♟','Customers'],['/admin','▣','Visits'],['/admin/help-requests','?','Help'],['/admin/billing','£','Billing'],['/admin/safety','!','Safety'],['/admin/training','✓','Training']];
+  const secondary=[['/admin/marketing','Marketing'],['/admin/knowledge','Knowledge'],['/admin/franchise','Network']];
+  const isActive=(href,label)=>{const target=href.replace(/\/$/,'').split('#')[0];return label==='Log visit'?logging:label==='Visits'?(path===target&&!logging):label==='Training'?(path===target||knowledge):path===target};
+
+  const mobile=document.createElement('nav');mobile.className='os-mobile-nav';mobile.setAttribute('aria-label','VIPOAP OS mobile navigation');
+  mobile.innerHTML=primary.map(([href,icon,label])=>`<a href="${href}" class="${isActive(href,label)?'active':''}"><span>${icon}</span>${label}</a>`).join('');document.body.append(mobile);
+
+  const desktop=document.createElement('nav');desktop.className='os-global-nav';desktop.hidden=true;desktop.setAttribute('aria-label','VIPOAP OS main navigation');
+  desktop.innerHTML=primary.map(([href,,label])=>`<a href="${href}" class="${isActive(href,label)?'active':''}">${label}</a>`).join('')+'<span class="os-nav-spacer" aria-hidden="true"></span>'+secondary.map(([href,label])=>`<a class="os-nav-secondary ${isActive(href,label)?'active':''}" href="${href}">${label}</a>`).join('');
+  document.body.insertBefore(desktop,document.body.firstChild);
+
+  const workspaceVisible=()=>[...document.querySelectorAll('#app,#hq,#portal,#workspace')].some(el=>!el.classList.contains('hidden'));
+  const syncNav=()=>{desktop.hidden=!workspaceVisible()};syncNav();
+  const observer=new MutationObserver(syncNav);document.querySelectorAll('#app,#hq,#portal,#workspace').forEach(el=>observer.observe(el,{attributes:true,attributeFilter:['class']}));
+
   if(logging){let attempts=0;const timer=setInterval(()=>{const editor=document.getElementById('calloutEditor');if(editor&&!editor.closest('.hidden')){editor.scrollIntoView({block:'start'});clearInterval(timer)}else if(++attempts>20)clearInterval(timer)},150)}
   let prompt;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();prompt=event;const target=document.querySelector('.top .actions,.top');if(!target||document.getElementById('installOS'))return;const button=document.createElement('button');button.id='installOS';button.className='btn quiet os-install';button.textContent='Install VIPOAP OS';button.onclick=async()=>{if(!prompt)return;prompt.prompt();await prompt.userChoice;prompt=null;button.remove()};target.append(button)});
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/admin/service-worker.js');
