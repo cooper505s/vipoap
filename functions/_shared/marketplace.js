@@ -11,11 +11,9 @@ export function money(pence){return `£${(Number(pence||0)/100).toFixed(2).repla
 export function resolveBookingService({service,supportType,duration}){
   const item=findService(service);
   if(!item)return{error:'Please choose a valid Technology service.'};
-  const fulfilment=fulfilmentType(supportType);
-  if(!serviceSupports(item,fulfilment))return{error:`${item.name} is not currently available by ${fulfilment==='remote'?'remote support':'home visit'}.`};
-  const minutes=Number(duration);
-  if(!Number.isFinite(minutes)||minutes<(item.minDurationMinutes||0)||minutes>(item.maxDurationMinutes||Infinity))return{error:'Please choose a valid appointment length for this service.'};
-  return{categoryId:TECHNOLOGY_CATEGORY.id,serviceId:item.id,serviceName:item.name,serviceSlug:item.slug,fulfilmentType:fulfilment};
+  const fulfilment=fulfilmentType(supportType),minutes=Number(duration);
+  if(!Number.isFinite(minutes))return{error:'Please choose a valid appointment length for this service.'};
+  return{categoryId:TECHNOLOGY_CATEGORY.id,serviceId:item.id,serviceName:item.name,serviceSlug:item.slug,fulfilmentType:fulfilment,fulfilmentSupported:serviceSupports(item,fulfilment),durationWithinCatalog:minutes>=(item.minDurationMinutes||0)&&minutes<=(item.maxDurationMinutes||Infinity)};
 }
 
 export function resolveBookingPricing({supportType,duration}){
