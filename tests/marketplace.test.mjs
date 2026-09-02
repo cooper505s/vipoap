@@ -9,9 +9,11 @@ test('maps legacy Technology labels to stable service IDs',()=>{
   assert.equal(result.fulfilmentType,'home');
 });
 
-test('prevents remote booking for a home-only Technology service',()=>{
+test('records future fulfilment rules without breaking legacy booking combinations',()=>{
   const result=resolveBookingService({service:'Wi-Fi / internet',supportType:'Remote support',duration:60});
-  assert.match(result.error,/not currently available by remote support/i);
+  assert.equal(result.serviceId,'tech-wifi');
+  assert.equal(result.fulfilmentType,'remote');
+  assert.equal(result.fulfilmentSupported,false);
 });
 
 test('preserves current live prices through a named pricing rule',()=>{
