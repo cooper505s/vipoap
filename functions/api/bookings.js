@@ -1,11 +1,11 @@
 import {ensureCustomer,findCustomer} from '../_shared/customers.js';
 import {initialBookingState} from '../_shared/booking-state.js';
 import {takeRateLimit} from '../_shared/rate-limit.js';
-import {providerEligible,resolveBookingPricing,resolveBookingService} from '../_shared/marketplace.js';
+import {providerEligible,resolveBookingPricingFromEnvironment,resolveBookingService} from '../_shared/marketplace.js';
 const DEFAULT_AVAILABILITY={monday:[['19:00','21:00']],wednesday:[['19:00','21:00']],saturday:[['11:00','13:00'],['16:00','19:00']]};
 const DAY_NAMES=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 function clean(value,max=500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
-function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[char]))}
 async function reference(env,date){const dateCode=`${date.slice(5,7)}${date.slice(8,10)}`;for(let attempt=0;attempt<20;attempt++){const bytes=crypto.getRandomValues(new Uint16Array(1)),number=String(bytes[0]%10000).padStart(4,'0'),candidate=`VIP-${dateCode}${number}`,key=`booking-reference:${candidate}`;if(!await env.VIPOAP_DATA.get(key)){await env.VIPOAP_DATA.put(key,JSON.stringify({date,createdAt:new Date().toISOString()}));return candidate}}throw new Error('Unable to create a unique booking reference.')}
 function toMinutes(time){const [h,m]=time.split(':').map(Number);return h*60+m}
 function jsonError(error,status){return Response.json({error},{status})}
@@ -36,9 +36,10 @@ export async function onRequestPost({request,env}){
   let body;try{body=await request.json()}catch{return jsonError('Invalid booking request.',400)}
   const booking={helpReference:clean(body.helpReference,30),referralCode:clean(body.referralCode,80),bookingFor:clean(body.bookingFor||'myself',20),supportType:clean(body.supportType||'Home visit',30),service:clean(body.service,100),duration:Number(body.duration),date:clean(body.date,10),time:clean(body.time,5),name:clean(body.name,100),phone:clean(body.phone,40),email:clean(body.email,120),address:clean(body.address,300),postcode:clean(body.postcode,20),notificationChannel:clean(body.notificationChannel||'Email',20),details:clean(body.details,1000),accessibilityNotes:clean(body.accessibilityNotes,500),bookerName:clean(body.bookerName,100),bookerPhone:clean(body.bookerPhone,40),bookerEmail:clean(body.bookerEmail,120),relationship:clean(body.relationship,80),paymentMethod:'online'};
   if(!['myself','someone_else'].includes(booking.bookingFor)||!['Home visit','Remote support'].includes(booking.supportType)||!booking.service||![30,60].includes(booking.duration)||(booking.supportType==='Home visit'&&booking.duration!==60)||!/^\d{4}-\d{2}-\d{2}$/.test(booking.date)||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(booking.time)||!booking.name||!booking.phone||!booking.postcode||(booking.supportType==='Home visit'&&!booking.address)||(booking.bookingFor==='someone_else'&&(!booking.bookerName||!booking.bookerPhone||!booking.relationship))||!['Email','SMS','WhatsApp','Phone'].includes(booking.notificationChannel))return jsonError('Please complete all required fields.',400);
-  const serviceResolution=resolveBookingService(booking);if(serviceResolution.error)return jsonError(serviceResolution.error,400);
-  const pricing=resolveBookingPricing(booking);if(!pricing)return jsonError('That appointment length is not currently available.',400);
-  Object.assign(booking,serviceResolution,{service:serviceResolution.serviceName,pricingRuleId:pricing.pricingRuleId,price:pricing.price,pricePence:pricing.customerPence,providerEntitlementPence:pricing.providerEntitlementPence,platformFeePence:pricing.platformFeePence,currency:pricing.currency});
+  const originalService=booking.service,serviceResolution=resolveBookingService(booking);if(serviceResolution.error)return jsonError(serviceResolution.error,400);
+  Object.assign(booking,serviceResolution,{service:originalService});
+  const pricing=await resolveBookingPricingFromEnvironment(env,{...booking,territoryId:'andover'});if(!pricing)return jsonError('That appointment length is not currently available.',400);
+  Object.assign(booking,{pricingRuleId:pricing.pricingRuleId,pricingSource:pricing.source,price:pricing.price,pricePence:pricing.customerPence,providerEntitlementPence:pricing.providerEntitlementPence,platformFeePence:pricing.platformFeePence,currency:pricing.currency});
   if(booking.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email))return jsonError('Please enter a valid email address.',400);
   if(booking.bookerEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.bookerEmail))return jsonError('Please enter a valid booker email address.',400);
   const clientIp=request.headers.get('CF-Connecting-IP')||request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();if(clientIp){const rate=await takeRateLimit(env.VIPOAP_DATA,{scope:'public-booking',identifier:clientIp,limit:5,windowSeconds:3600});if(!rate.allowed)return new Response(JSON.stringify({error:'Too many booking attempts. Please wait before trying again, or call 07977 254158.'}),{status:429,headers:{'content-type':'application/json','retry-after':String(rate.retryAfter)}})}
@@ -66,6 +67,6 @@ export async function onRequestPost({request,env}){
   const customer=await ensureCustomer(env,booking);
   await env.VIPOAP_DATA.put(slotKey,JSON.stringify({...storedBooking,customerId:customer?.key||'',updatedAt:new Date().toISOString()}));
   if(booking.referralCode){const referralKey=await env.VIPOAP_DATA.get(`referral-code:${booking.referralCode}`);if(referralKey){const referral=await env.VIPOAP_DATA.get(referralKey,'json');if(referral){const at=new Date().toISOString();await env.VIPOAP_DATA.put(referralKey,JSON.stringify({...referral,referredCustomerId:customer?.key||'',bookingKey:slotKey,status:'booked',history:[...(referral.history||[]),{status:'booked',at}],updatedAt:at}))}}}
-  console.log(JSON.stringify({event:'booking_created',reference:ref,date:booking.date,time:booking.time,duration:booking.duration,categoryId:booking.categoryId,serviceId:booking.serviceId,providerId:selected.operatorId,pricingRuleId:booking.pricingRuleId}));
+  console.log(JSON.stringify({event:'booking_created',reference:ref,date:booking.date,time:booking.time,duration:booking.duration,categoryId:booking.categoryId,serviceId:booking.serviceId,providerId:selected.operatorId,pricingRuleId:booking.pricingRuleId,pricingSource:booking.pricingSource}));
   return Response.json({ok:true,reference:ref,paymentRequired:true,paymentStatus:'payment-required',holdExpiresAt,categoryId:booking.categoryId,serviceId:booking.serviceId,pricePence:booking.pricePence,preferredEngineerMatched:Boolean(preferredEngineerId&&selected.operatorId===preferredEngineerId)});
 }
