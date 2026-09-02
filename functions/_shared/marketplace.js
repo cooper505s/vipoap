@@ -1,7 +1,12 @@
 import {findService,serviceSupports,TECHNOLOGY_CATEGORY} from './service-catalog.js';
 
-const LEGACY_PRICING={
-  home:{60:{customerPence:3000,providerEntitlementPence:0,platformFeePence:0}},
+const ACTIVE_PRICING={
+  home:{
+    30:{customerPence:3900,providerEntitlementPence:2500,platformFeePence:1400},
+    60:{customerPence:6400,providerEntitlementPence:4500,platformFeePence:1900},
+    90:{customerPence:8900,providerEntitlementPence:6500,platformFeePence:2400},
+    120:{customerPence:11400,providerEntitlementPence:8500,platformFeePence:2900}
+  },
   remote:{30:{customerPence:1500,providerEntitlementPence:0,platformFeePence:0},60:{customerPence:2500,providerEntitlementPence:0,platformFeePence:0}}
 };
 
@@ -17,9 +22,9 @@ export function resolveBookingService({service,supportType,duration}){
 }
 
 export function resolveBookingPricing({supportType,duration}){
-  const fulfilment=fulfilmentType(supportType),rule=LEGACY_PRICING[fulfilment]?.[Number(duration)];
+  const fulfilment=fulfilmentType(supportType),rule=ACTIVE_PRICING[fulfilment]?.[Number(duration)];
   if(!rule)return null;
-  return{pricingRuleId:`legacy-${fulfilment}-${duration}`,billingModel:'fixed',currency:'GBP',...rule,price:money(rule.customerPence),source:'legacy'};
+  return{pricingRuleId:`technology-${fulfilment}-${duration}`,billingModel:fulfilment==='home'?'time_blocks':'fixed',currency:'GBP',...rule,price:money(rule.customerPence),source:'active-config'};
 }
 
 export async function resolveBookingPricingFromEnvironment(env,{categoryId,serviceId,supportType,duration,territoryId='andover'}){
@@ -69,7 +74,7 @@ function postcodeMatches(postcode,patterns=[]){
 }
 
 export function providerEligible(operator,{serviceId,fulfilmentType,postcode,territoryId}){
-  if(!operator)return true; // legacy single-provider fallback remains valid
+  if(!operator)return true;
   const legacyTypes=Array.isArray(operator.serviceTypes)?operator.serviceTypes:[];
   if(legacyTypes.length&&!legacyTypes.includes(fulfilmentType))return false;
 
