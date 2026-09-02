@@ -4,13 +4,14 @@ export const TECHNOLOGY_CATEGORY={
 
 export const TECHNOLOGY_SERVICES=[
   {id:'tech-computer',slug:'computer-laptop',name:'Computer or laptop',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['computer','computer or laptop','laptop','pc']},
-  {id:'tech-wifi',slug:'wifi-internet',name:'Wi-Fi / internet',fulfilmentTypes:['home'],defaultDurationMinutes:60,minDurationMinutes:60,maxDurationMinutes:180,aliases:['wi-fi','wifi','wi-fi / internet','wifi / internet','internet','broadband','mesh wifi','mesh wi-fi']},
-  {id:'tech-printer',slug:'printer',name:'Printer',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['printer','printer or scanner','scanner']},
-  {id:'tech-mobile',slug:'phone-tablet',name:'Phone or tablet',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['phone','tablet','phone or tablet','mobile phone','ipad','iphone']},
-  {id:'tech-tv',slug:'smart-tv-streaming',name:'Smart TV / streaming',fulfilmentTypes:['home'],defaultDurationMinutes:60,minDurationMinutes:60,maxDurationMinutes:120,aliases:['smart tv','smart tv / streaming','tv','streaming']},
+  {id:'tech-wifi',slug:'wifi-internet',name:'Wi-Fi / internet',fulfilmentTypes:['home'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:180,aliases:['wi-fi','wifi','wi-fi / internet','wifi / internet','wi-fi & broadband','wifi & broadband','internet','broadband','mesh wifi','mesh wi-fi']},
+  {id:'tech-printer',slug:'printer',name:'Printer',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['printer','printer or scanner','printer & scanning','printer and scanning','scanner']},
+  {id:'tech-mobile',slug:'phone-tablet',name:'Phone or tablet',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['phone','tablet','phone or tablet','phone or tablet setup','mobile phone','ipad','iphone']},
+  {id:'tech-tv',slug:'smart-tv-streaming',name:'Smart TV / streaming',fulfilmentTypes:['home'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['smart tv','smart tv / streaming','tv','streaming']},
   {id:'tech-new-device',slug:'new-device-setup',name:'New device setup',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:180,aliases:['new device','new device setup','device setup']},
   {id:'tech-email',slug:'email-accounts',name:'Email / accounts',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['email','email / accounts','email and accounts','accounts','passwords']},
-  {id:'tech-smart-home',slug:'smart-home',name:'Smart-home device',fulfilmentTypes:['home'],defaultDurationMinutes:60,minDurationMinutes:60,maxDurationMinutes:180,aliases:['smart home','smart-home device','smart home device']},
+  {id:'tech-smart-home',slug:'smart-home',name:'Smart-home device',fulfilmentTypes:['home'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:180,aliases:['smart home','smart-home device','smart home device','smart tv or smart home']},
+  {id:'tech-online-safety',slug:'online-safety',name:'Online safety',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['internet safety','online safety','scam awareness','security help']},
   {id:'tech-general',slug:'general-help',name:'General technology help',publicName:'Something else',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['general technology','general technology help','something else','other']}
 ];
 
