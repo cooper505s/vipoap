@@ -11,10 +11,10 @@ export const TECHNOLOGY_SERVICES=[
   {id:'tech-new-device',slug:'new-device-setup',name:'New device setup',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:180,aliases:['new device','new device setup','device setup']},
   {id:'tech-email',slug:'email-accounts',name:'Email / accounts',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['email','email / accounts','email and accounts','accounts','passwords']},
   {id:'tech-smart-home',slug:'smart-home',name:'Smart-home device',fulfilmentTypes:['home'],defaultDurationMinutes:60,minDurationMinutes:60,maxDurationMinutes:180,aliases:['smart home','smart-home device','smart home device']},
-  {id:'tech-general',slug:'general-help',name:'Something else',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['general technology','general technology help','something else','other']}
+  {id:'tech-general',slug:'general-help',name:'General technology help',publicName:'Something else',fulfilmentTypes:['home','remote'],defaultDurationMinutes:60,minDurationMinutes:30,maxDurationMinutes:120,aliases:['general technology','general technology help','something else','other']}
 ];
 
 function normalise(value){return String(value||'').trim().toLowerCase().replace(/[–—]/g,'-').replace(/\s+/g,' ')}
-export function findService(value){const key=normalise(value);if(!key)return null;return TECHNOLOGY_SERVICES.find(service=>service.id===key||service.slug===key||normalise(service.name)===key||(service.aliases||[]).some(alias=>normalise(alias)===key))||null}
-export function publicServiceCatalog(){return{categories:[{...TECHNOLOGY_CATEGORY,services:TECHNOLOGY_SERVICES.map(({aliases,...service})=>service)}]}}
+export function findService(value){const key=normalise(value);if(!key)return null;return TECHNOLOGY_SERVICES.find(service=>service.id===key||service.slug===key||normalise(service.name)===key||normalise(service.publicName)===key||(service.aliases||[]).some(alias=>normalise(alias)===key))||null}
+export function publicServiceCatalog(){return{categories:[{...TECHNOLOGY_CATEGORY,services:TECHNOLOGY_SERVICES.map(({aliases,publicName,...service})=>({...service,name:publicName||service.name}))}]}}
 export function serviceSupports(service,fulfilmentType){const item=typeof service==='string'?findService(service):service;return Boolean(item?.fulfilmentTypes?.includes(fulfilmentType))}
