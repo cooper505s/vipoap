@@ -2,7 +2,7 @@
 
 ## Decision
 
-VIPOAP remains **Technology-only at launch**. The backend is category-neutral so additional home-service categories can be introduced later without rebuilding bookings, provider profiles, coverage, pricing, payments, reviews or reporting.
+VIPOAP remains **Technology-only at launch**. The backend is category-neutral so additional home-service categories can be introduced later without rebuilding bookings, provider profiles, coverage, pricing, payments, reviews, communications or reporting.
 
 No future trade category should be made customer-visible until it has its own commercial, insurance, credential, safeguarding and regulatory review.
 
@@ -51,16 +51,23 @@ Financial ledger for the marketplace split. Stores gross customer payment, provi
 
 This table is deliberately independent from the payment processor. Stripe IDs are recorded, but Stripe is infrastructure rather than the accounting source of truth.
 
+## Communications architecture
+
+Transactional communications are channel-neutral. Email and WhatsApp Business can carry the same business events without embedding provider-specific API code throughout booking, referral or provider workflows.
+
+The shared communications layer supports booking received/confirmed, appointment reminders, provider job offers/confirmations, additional-time requests, payment reminders, referral invites/rewards and review invitations.
+
+Messages can be queued under `communication-queue:*`, processed by the scheduled worker and recorded under `communication:*` with channel, event, recipient, delivery state and provider message ID. WhatsApp webhook delivery/read/failed events and inbound replies are recorded separately.
+
+When WhatsApp is chosen as the booking communication channel, explicit transactional consent is required and stored on the customer record with a consent timestamp. Transactional consent must not be treated as marketing consent.
+
+See `docs/WHATSAPP-BUSINESS.md` for required environment variables, approved template names, webhook setup and production checklist.
+
 ## Stripe Connect direction
 
 The schema is Connect-ready but Connect settlement is not yet enabled.
 
-Provider records can hold:
-
-- Stripe connected account ID
-- onboarding status
-- charges enabled
-- payouts enabled
+Provider records can hold Stripe connected account ID, onboarding status, charges enabled and payouts enabled.
 
 When Connect is enabled, the implementation should calculate the commercial split from the selected pricing rule and persist a marketplace transaction before/alongside payment creation.
 
@@ -68,17 +75,7 @@ Do not infer tax treatment merely from the Stripe transfer configuration. Contra
 
 ## Booking evolution
 
-Existing booking records remain readable. New bookings also reference/store:
-
-- category ID
-- service ID
-- assigned provider ID
-- pricing rule ID
-- customer amount
-- provider entitlement
-- platform fee
-
-The legacy text `service` and `operatorId` fields remain during migration.
+Existing booking records remain readable. New bookings also reference/store category ID, service ID, assigned provider ID, pricing rule ID, customer amount, provider entitlement and platform fee. The legacy text `service` and `operatorId` fields remain during migration.
 
 ## Current Technology catalogue
 
@@ -94,13 +91,15 @@ Only Technology is active. Future categories must be added behind `disabled` or 
 4. Add assignment offer/accept/decline/expiry workflow.
 5. Complete accountant/solicitor review of marketplace/agency model.
 6. Enable Stripe Connect onboarding and marketplace settlement.
-7. Add provider earnings/transaction statements.
-8. Only then prepare any additional service category behind `disabled`/`internal` status.
+7. Complete WhatsApp Business credentials, approved templates and webhook registration.
+8. Add provider communication preferences and provider job notifications to the same communication queue.
+9. Add provider earnings/transaction statements.
+10. Only then prepare any additional service category behind `disabled`/`internal` status.
 
 ## Rules for future categories
 
 A future category should be data/configuration first, not a new set of bespoke booking tables.
 
-Each category may define its services, fulfilment modes, pricing rules, provider credentials, service areas, insurance requirements and booking questions through metadata/configuration.
+Each category may define its services, fulfilment modes, pricing rules, provider credentials, service areas, insurance requirements, booking questions and communication templates/events through configuration.
 
 Regulated work must never be enabled merely by adding a category row. Category launch requires explicit validation and provider credential rules.
