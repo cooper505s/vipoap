@@ -1,0 +1,107 @@
+/* High-contrast and Windows forced-colour resilience.
+   Loaded by assets/script.js so all standard public pages share the same fixes. */
+html.contrast body,
+html.contrast main,
+html.contrast section,
+html.contrast header,
+html.contrast nav,
+html.contrast footer,
+html.contrast article,
+html.contrast aside,
+html.contrast form,
+html.contrast details,
+html.contrast .hero-shell,
+html.contrast .local-people,
+html.contrast .local-card,
+html.contrast .operator-step,
+html.contrast .process-grid article,
+html.contrast .requirement-card,
+html.contrast .interest-form,
+html.contrast .service-card,
+html.contrast .price-card,
+html.contrast .tip-card,
+html.contrast .faq-item,
+html.contrast .booking-form,
+html.contrast .page-hero-card,
+html.contrast .reassurance-card,
+html.contrast .contact-method,
+html.contrast .value-grid,
+html.contrast .home-mesh,
+html.contrast .mesh-explainer,
+html.contrast .testi,
+html.contrast .step {
+  background:#000 !important;
+  background-image:none !important;
+  color:#fff !important;
+  border-color:#fff !important;
+  box-shadow:none !important;
+}
+
+html.contrast h1,
+html.contrast h2,
+html.contrast h3,
+html.contrast h4,
+html.contrast p,
+html.contrast li,
+html.contrast label,
+html.contrast small,
+html.contrast strong,
+html.contrast span,
+html.contrast summary,
+html.contrast blockquote,
+html.contrast cite,
+html.contrast .small-print,
+html.contrast .lead,
+html.contrast .section-head p,
+html.contrast .page-hero p,
+html.contrast .service-card p,
+html.contrast .tip-body,
+html.contrast .faq-item p,
+html.contrast .value-grid p,
+html.contrast .home-mesh-copy p {
+  color:#fff !important;
+}
+
+html.contrast a:not(.btn-primary),
+html.contrast .eyebrow,
+html.contrast .tick-list li::before,
+html.contrast .service-card li::before,
+html.contrast .service-tiles em,
+html.contrast .price,
+html.contrast .testi cite {
+  color:#ffe600 !important;
+}
+
+html.contrast .btn-primary,
+html.contrast .operator-step > strong,
+html.contrast .process-grid article > strong,
+html.contrast .step .num,
+html.contrast .ribbon,
+html.contrast .active-size {
+  background:#ffe600 !important;
+  color:#000 !important;
+  border-color:#ffe600 !important;
+}
+
+html.contrast .btn-secondary,
+html.contrast .tool-button,
+html.contrast input,
+html.contrast select,
+html.contrast textarea {
+  background:#000 !important;
+  color:#fff !important;
+  border-color:#fff !important;
+}
+
+html.contrast input::placeholder,
+html.contrast textarea::placeholder { color:#e6e6e6 !important; opacity:1; }
+html.contrast :focus-visible { outline-color:#ffe600 !important; }
+
+@media (forced-colors: active) {
+  * { forced-color-adjust:auto; }
+  img { forced-color-adjust:auto; }
+  .btn,.tool-button,.nav-toggle,input,select,textarea { border:2px solid ButtonText; }
+  .btn-primary { background:ButtonFace; color:ButtonText; }
+  a { text-decoration:underline; }
+  .main-nav a.active { border-bottom-color:Highlight; }
+}

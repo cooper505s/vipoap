@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {COMMUNICATION_EVENTS,processCommunicationQueue,sendWhatsAppTemplate,whatsappBodyComponents,whatsappTemplateName} from '../functions/_shared/communications.js';
+import {onRequestGet as verifyWebhook} from '../functions/api/webhooks/whatsapp.js';
+
+function environment(){const values=new Map();return{values,env:{WHATSAPP_API_URL:'https://graph.example.test/messages',WHATSAPP_ACCESS_TOKEN:'token',WHATSAPP_VERIFY_TOKEN:'verify-me',VIPOAP_WA_TEMPLATE_BOOKING_RECEIVED:'vipoap_booking_received',VIPOAP_DATA:{async get(key,type){const value=values.get(key);return type==='json'&&value?JSON.parse(value):value??null},async put(key,value){values.set(key,value)},async list({prefix}){return{keys:[...values.keys()].filter(key=>key.startsWith(prefix)).map(name=>({name}))}}}}}}
+
+test('maps transactional events to configured WhatsApp templates',()=>{const{env}=environment();assert.equal(whatsappTemplateName(env,COMMUNICATION_EVENTS.BOOKING_RECEIVED),'vipoap_booking_received')});
+
+test('builds ordered WhatsApp body template parameters',()=>{assert.deepEqual(whatsappBodyComponents({name:'Margaret',reference:'VIP-1234',date:'2026-09-10'}),[{type:'body',parameters:[{type:'text',text:'Margaret'},{type:'text',text:'VIP-1234'},{type:'text',text:'2026-09-10'}]}])});
+
+test('sends a WhatsApp template through configured endpoint and records it',async t=>{const{env,values}=environment(),calls=[],originalFetch=globalThis.fetch;globalThis.fetch=async(url,options)=>{calls.push({url,options});return Response.json({messages:[{id:'wamid.test'}]})};t.after(()=>{globalThis.fetch=originalFetch});const result=await sendWhatsAppTemplate(env,{to:'07977 254158',event:COMMUNICATION_EVENTS.BOOKING_RECEIVED,components:whatsappBodyComponents({name:'Test',reference:'VIP-1'})});assert.equal(result.ok,true);assert.equal(calls.length,1);assert.equal(calls[0].url,'https://graph.example.test/messages');const payload=JSON.parse(calls[0].options.body);assert.equal(payload.messaging_product,'whatsapp');assert.equal(payload.template.name,'vipoap_booking_received');assert.ok([...values.keys()].some(key=>key.startsWith('communication:system:')))});
+
+test('processes pending WhatsApp queue records',async t=>{const{env,values}=environment(),originalFetch=globalThis.fetch;globalThis.fetch=async()=>Response.json({messages:[{id:'wamid.queue'}]});t.after(()=>{globalThis.fetch=originalFetch});values.set('communication-queue:1',JSON.stringify({id:'one',event:COMMUNICATION_EVENTS.BOOKING_RECEIVED,channel:'WhatsApp',recipient:'07977254158',templateData:{name:'Test',reference:'VIP-2'},status:'pending',attempts:0,createdAt:'2026-09-03T00:00:00.000Z'}));const result=await processCommunicationQueue(env,{now:new Date('2026-09-03T00:10:00.000Z')});assert.equal(result.sent,1);assert.equal(JSON.parse(values.get('communication-queue:1')).status,'sent')});
+
+test('verifies Meta webhook challenge with configured token',async()=>{const{env}=environment();const request=new Request('https://example.test/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=verify-me&hub.challenge=12345');const response=await verifyWebhook({request,env});assert.equal(response.status,200);assert.equal(await response.text(),'12345')});
