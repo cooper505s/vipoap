@@ -8,8 +8,8 @@ export const PERMISSIONS=[
 export const BUILT_IN_ROLES={
   owner:{id:'owner',name:'Owner',description:'Full control of VIPOAP OS.',permissions:['*'],system:true},
   admin:{id:'admin',name:'Administrator',description:'Business administration without owner-only role control.',permissions:PERMISSIONS.filter(x=>x!=='manage_roles'),system:true},
-  operator:{id:'operator',name:'Operator',description:'Customer visits, follow-ups and assigned training.',permissions:['view_dashboard','manage_customers','manage_calls','manage_followups','view_training','manage_marketing','report_incidents','manage_recordings','manage_equipment'],system:true},
-  viewer:{id:'viewer',name:'Viewer',description:'Read-only operational and training access.',permissions:['view_dashboard','view_franchise','view_training'],system:true}
+  operator:{id:'operator',name:'Engineer Partner',description:'Partner workspace for customers, visits, follow-ups, training, safety and local marketing.',permissions:['view_dashboard','manage_customers','manage_calls','manage_followups','view_training','manage_marketing','report_incidents','manage_recordings','manage_equipment'],system:true},
+  viewer:{id:'viewer',name:'Admin Viewer',description:'Read-only central reporting and training access.',permissions:['view_dashboard','view_franchise','view_training'],system:true}
 };
 
 export async function roleFor(env,id='viewer'){
