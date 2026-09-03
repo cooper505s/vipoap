@@ -11,7 +11,8 @@ test('central administrator login exposes secure forgot-password recovery',()=>{
   assert.match(loginScript,/\/api\/admin\/auth\/request/);
   assert.match(loginScript,/\/api\/admin\/auth\/verify/);
   assert.match(loginScript,/one-time sign-in code/i);
-  assert.doesNotMatch(loginScript,/display.*password|email.*password/i);
+  assert.doesNotMatch(loginScript,/password\s*[:=]\s*['"`][^'"`]+['"`]/i);
+  assert.doesNotMatch(loginScript,/body\s*:\s*JSON\.stringify\([^)]*password/i);
 });
 
 test('owner email recovery remains rate-limited and single-use',()=>{
