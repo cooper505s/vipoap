@@ -1,7 +1,7 @@
 {
   "name": "VIPOAP OS",
   "short_name": "VIPOAP OS",
-  "description": "Secure VIPOAP Partner Workspace and Admin Centre.",
+  "description": "The private VIPOAP engineer app for customer work, training and the Engineer Knowledge Base.",
   "start_url": "/admin/",
   "scope": "/admin/",
   "display": "standalone",
@@ -45,6 +45,12 @@
     {
       "name": "Training",
       "url": "/admin/training"
+    },
+    {
+      "name": "Knowledge Base",
+      "short_name": "Knowledge",
+      "description": "Open the Engineer Knowledge Base",
+      "url": "/admin/knowledge"
     }
   ]
 }
