@@ -14,5 +14,5 @@ html{overflow-y:scroll}body{font-size:14px;line-height:1.38;min-height:100vh}bod
 .os-page-header .os-brand h1{margin:0!important;font-size:1.18rem!important;line-height:1.1!important}
 .os-page-header .os-brand p{margin:4px 0 0!important;font-size:.82rem!important;line-height:1.2!important;min-height:1em}
 .os-page-header>.actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:nowrap!important;gap:7px!important;min-width:0;max-width:100%;margin:0!important;overflow-x:auto;scrollbar-width:thin}
-.os-page-header>.actions .btn{flex:0 0 auto;white-space:nowrap}
+.os-page-header>.actions .btn{flex:0 0 auto;white-space:nowrap;text-decoration:none}.os-page-header>.actions .secondary{background:#fff!important;color:#102957!important;border:2px solid #102957!important}.os-page-header>.actions .primary{background:#102957!important;color:#fff!important}
 @media(max-width:720px){.os-page-header.top.card{grid-template-columns:1fr;align-content:center!important;min-height:124px!important;padding:11px!important;gap:8px!important}.os-page-header>.actions{width:100%!important;justify-content:flex-start!important}.os-page-header .os-brand img{width:42px!important;height:42px!important;flex-basis:42px}}
