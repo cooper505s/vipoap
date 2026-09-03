@@ -38,7 +38,7 @@
     main.innerHTML='<section class="card os-access-denied"><span class="pill">Access restricted</span><h1>This area is for central administration</h1><p>Your account does not have the required permission for this page.</p><a class="btn primary" href="/admin/">Return to Partner Workspace</a></section>';
   }
   async function syncNav(){
-    if(!signedIn()){mobile.hidden=true;desktop.hidden=true;return}
+    if(!signedIn()){mobile.hidden=true;desktop.hidden=true;if(document.body.dataset.pagePermission&&!document.getElementById('login')&&location.pathname!=='/admin/'&&location.pathname!=='/admin')location.replace('/admin/');return}
     try{
       const response=await fetch('/api/admin/session',{headers:headers()}),data=await response.json();if(!response.ok)throw Error();
       effectivePermissions=data.permissions||[];render(effectivePermissions);applyVisibility();
