@@ -49,7 +49,7 @@
   syncNav();
   const observer=new MutationObserver(()=>{applyVisibility();if(signedIn()&&(mobile.hidden||desktop.hidden))syncNav()});
   observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
-  let prompt;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();prompt=event;if(document.getElementById('installOS'))return;const target=document.querySelector('.os-install-slot');if(!target)return;const button=document.createElement('button');button.id='installOS';button.className='btn os-install';button.type='button';button.textContent='Install OS';button.onclick=async()=>{if(!prompt)return;prompt.prompt();await prompt.userChoice;prompt=null;button.remove()};target.append(button)});
+  let prompt;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();prompt=event;if(document.getElementById('installOS'))return;const target=document.querySelector('.os-install-slot');if(!target)return;const button=document.createElement('button');button.id='installOS';button.className='btn os-install';button.type='button';button.textContent='Install VIPOAP OS';button.onclick=async()=>{if(!prompt)return;prompt.prompt();await prompt.userChoice;prompt=null;button.remove()};target.append(button)});
   if('serviceWorker'in navigator)navigator.serviceWorker.register('/admin/service-worker.js');
 })();
 (function(){if(document.getElementById('connectivityStatus'))return;var script=document.createElement('script');script.src='/assets/connectivity.js';document.body.appendChild(script)})();
