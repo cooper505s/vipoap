@@ -2,7 +2,7 @@ import {adminContext,canAccessTerritory} from '../../_shared/admin-auth.js';
 import {hasPermission} from '../../_shared/permissions.js';
 async function records(kv,prefix){const keys=await kv.list({prefix});return (await Promise.all(keys.keys.map(async key=>({key:key.name,...await kv.get(key.name,'json')})))).filter(Boolean)}
 export async function onRequestGet({request,env}){
-  const context=await adminContext(request,env);if(!hasPermission(context,'view_dashboard'))return Response.json({error:'Unauthorised'},{status:401});if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
+  const context=await adminContext(request,env);if(!hasPermission(context,'manage_operations'))return Response.json({error:'Unauthorised'},{status:401});if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
   const scoped=items=>items.filter(x=>canAccessTerritory(context,x.territoryId||'andover')&&(context.role!=='operator'||(x.operatorId||x.assignedEngineerId)===context.operatorId));
   const [customers,bookings,callouts,invoices,followupRecords,incidents]=await Promise.all([records(env.VIPOAP_DATA,'customer:'),records(env.VIPOAP_DATA,'booking:'),records(env.VIPOAP_DATA,'callout:'),records(env.VIPOAP_DATA,'invoice:'),records(env.VIPOAP_DATA,'followup:'),records(env.VIPOAP_DATA,'incident:')]).then(groups=>groups.map(scoped));
   const today=new Date().toISOString().slice(0,10),week=new Date(Date.now()+7*86400000).toISOString().slice(0,10),month=today.slice(0,7);
