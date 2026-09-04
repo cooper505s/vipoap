@@ -7,7 +7,7 @@ const ACTIVE_PRICING={
     90:{customerPence:8900,providerEntitlementPence:6500,platformFeePence:2400},
     120:{customerPence:11400,providerEntitlementPence:8500,platformFeePence:2900}
   },
-  remote:{30:{customerPence:1500,providerEntitlementPence:0,platformFeePence:0},60:{customerPence:2500,providerEntitlementPence:0,platformFeePence:0}}
+  remote:{30:{customerPence:2500,providerEntitlementPence:0,platformFeePence:2500},60:{customerPence:4500,providerEntitlementPence:0,platformFeePence:4500}}
 };
 
 function fulfilmentType(supportType){return String(supportType||'').toLowerCase().includes('remote')?'remote':'home'}
