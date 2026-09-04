@@ -86,3 +86,40 @@ html.contrast .wordmark-ap{color:#ffe600!important}
   .nav-row{gap:10px}
   .main-nav a{font-size:.82rem;padding-inline:0}
 }
+
+
+/* Consistent public navigation and highlighted customer-app link. */
+.site-header{background:#fff!important;backdrop-filter:none}
+.main-nav{background:#fff!important}
+.main-nav a.app-nav-link{
+  align-self:center;
+  margin:5px 0;
+  padding:7px 14px;
+  border:2px solid var(--green);
+  border-radius:999px;
+  background:var(--green);
+  color:#fff;
+  line-height:1.2;
+}
+.main-nav a.app-nav-link:hover,
+.main-nav a.app-nav-link:focus-visible{
+  border-color:var(--green-dark);
+  background:var(--green-dark);
+  color:#fff;
+}
+html.contrast .main-nav a.app-nav-link{
+  border-color:#ffe600!important;
+  background:#ffe600!important;
+  color:#000!important;
+}
+@media (min-width:901px) and (max-width:1400px){
+  .nav-row{gap:6px}
+  .main-nav a{font-size:.8rem}
+}
+@media(max-width:680px){
+  .main-nav a.app-nav-link{
+    margin:8px 14px;
+    padding:13px 18px;
+    text-align:center;
+  }
+}
