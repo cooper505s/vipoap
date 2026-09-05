@@ -46,7 +46,7 @@ $('customer').onchange=history;
 $('healthForm').onsubmit=async event=>{event.preventDefault();const answers=Object.fromEntries(domains.map(({id})=>[id,$(id).value])),notes=Object.fromEntries(domains.map(({id})=>[id,$(id+'Notes').value]));$('save').disabled=true;$('status').textContent='Calculating and saving…';try{const data=await api('/api/admin/health-checks',{method:'POST',body:JSON.stringify({customerId:$('customer').value,answers,notes,observations:$('observations').value,recommendations:$('recommendations').value})});$('status').textContent=`Health check saved. Overall score: ${data.check.overallScore}/100.`;await load()}catch(error){$('status').textContent=error.message}finally{$('save').disabled=false}};
 load().catch(error=>$('status').textContent=error.message);
 </script>
-<script src="email-login.js?v=5"></script>
-<script src="mobile-nav.js"></script>
+<script src="email-login.js?v=6"></script>
+<script src="mobile-nav.js?v=2"></script>
 </body>
 </html>

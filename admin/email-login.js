@@ -1,14 +1,60 @@
-(()=>{const login=document.getElementById('login');if(!login)return;
-login.classList.add('auth-shell');const box=document.createElement('div');box.className='partner-login';box.innerHTML='<div class="auth-brand"><img src="../assets/vipoap-os-heart-blue.png" alt=""><div><h1>VIPOAP OS</h1><p>Secure workspace sign-in</p></div></div><h2>Partner sign in</h2><p class="muted">Use the authorised email connected to your VIPOAP territory.</p><div class="field"><label for="adminEmail">Partner email</label><input id="adminEmail" type="email" autocomplete="email" placeholder="your-area@vipoap.co.uk"></div><button class="btn primary" id="emailCodeButton" type="button">Email my sign-in code</button><div id="emailCodeFields" class="hidden"><div class="field"><label for="emailCode">Six-digit code</label><input id="emailCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div><button class="btn primary" id="verifyCodeButton" type="button">Open my territory portal</button></div><p id="emailCodeStatus" class="status" aria-live="polite"></p>';login.prepend(box);
-const button=document.getElementById('emailCodeButton'),fields=document.getElementById('emailCodeFields'),status=document.getElementById('emailCodeStatus'),email=document.getElementById('adminEmail');
-async function requestCode(address,statusElement,buttonElement){buttonElement.disabled=true;statusElement.textContent='Sending code...';try{const response=await fetch('/api/admin/auth/request',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:address})}),data=await response.json();if(!response.ok)throw Error(data.error||'Unable to send code');statusElement.textContent=data.message;return true}catch(error){statusElement.textContent=error.message;return false}finally{buttonElement.disabled=false}}
-async function verifyCode(address,code,statusElement,destination='/admin/'){statusElement.textContent='Checking code...';try{const response=await fetch('/api/admin/auth/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:address,code})}),data=await response.json();if(!response.ok)throw Error(data.error||'Unable to sign in');sessionStorage.setItem('vipoapAdminSession',data.token);sessionStorage.removeItem('vipoapAdmin');location.href=data.destination||destination}catch(error){statusElement.textContent=error.message}}
-button.onclick=async()=>{if(await requestCode(email.value,status,button))fields.classList.remove('hidden')};
-document.getElementById('verifyCodeButton').onclick=()=>verifyCode(email.value,document.getElementById('emailCode').value,status);
-const central=[...login.querySelectorAll('details')].find(item=>/central administrator sign in/i.test(item.querySelector('summary')?.textContent||''));if(!central)return;
-const recovery=document.createElement('div');recovery.className='admin-recovery';recovery.style.cssText='margin-top:18px;padding-top:16px;border-top:1px solid #dfe7dd';recovery.innerHTML='<h3 style="margin:0 0 8px">Central administrator recovery</h3><button class="btn quiet" id="forgotAdminPassword" type="button">Forgot password?</button><p class="muted" style="margin:8px 0 0">Email a secure one-time sign-in code to the VIPOAP owner account. The existing password is never revealed.</p><div id="adminRecoveryFields" class="hidden"><div class="field"><label for="adminRecoveryCode">Six-digit recovery code</label><input id="adminRecoveryCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div><button class="btn primary" id="verifyAdminRecovery" type="button">Sign in securely</button></div><p id="adminRecoveryStatus" class="status" aria-live="polite"></p>';
-central.insertAdjacentElement('afterend',recovery);
-const recoveryButton=document.getElementById('forgotAdminPassword'),recoveryFields=document.getElementById('adminRecoveryFields'),recoveryStatus=document.getElementById('adminRecoveryStatus');
-recoveryButton.onclick=async()=>{if(await requestCode('admin@vipoap.co.uk',recoveryStatus,recoveryButton)){recoveryFields.classList.remove('hidden');document.getElementById('adminRecoveryCode').focus()}};
-document.getElementById('verifyAdminRecovery').onclick=()=>verifyCode('admin@vipoap.co.uk',document.getElementById('adminRecoveryCode').value,recoveryStatus,'/admin/franchise');
+(()=>{
+  const workspace=document.body.dataset.workspace||'engineer';
+  const password=sessionStorage.getItem('vipoapAdmin')||'';
+  const session=sessionStorage.getItem('vipoapAdminSession')||'';
+
+  if(workspace==='admin'){
+    if(!password&&!session)location.replace('/admin/hq');
+    return;
+  }
+
+  const login=document.getElementById('login');
+  if(!login||password||session)return;
+  login.classList.add('auth-shell');
+  login.innerHTML='<div class="partner-login"><div class="auth-brand"><img src="../assets/vipoap-os-heart-blue.png" alt=""><div><h1>VIPOAP OS</h1><p>Secure Engineer Partner area</p></div></div><h2>Engineer Partner sign in</h2><p class="muted">Use the authorised email address connected to your VIPOAP area.</p><div class="field"><label for="adminEmail">Engineer Partner email</label><input id="adminEmail" type="email" autocomplete="email" placeholder="your-area@vipoap.co.uk" required></div><button class="btn primary" id="emailCodeButton" type="button">Email my sign-in code</button><div id="emailCodeFields" class="hidden"><div class="field"><label for="emailCode">Six-digit code</label><input id="emailCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></div><button class="btn primary" id="verifyCodeButton" type="button">Open My Work</button></div><p id="emailCodeStatus" class="status" aria-live="polite"></p><p class="muted"><a href="/admin/hq">Administrator sign in</a></p></div>';
+
+  const button=document.getElementById('emailCodeButton');
+  const fields=document.getElementById('emailCodeFields');
+  const status=document.getElementById('emailCodeStatus');
+  const email=document.getElementById('adminEmail');
+  const code=document.getElementById('emailCode');
+
+  async function json(response){
+    const type=response.headers.get('content-type')||'';
+    return type.includes('application/json')?response.json():{error:await response.text()};
+  }
+
+  async function requestCode(){
+    const address=email.value.trim();
+    if(!email.reportValidity())return;
+    button.disabled=true;
+    status.textContent='Sending code…';
+    try{
+      const response=await fetch('/api/admin/auth/request',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:address})});
+      const data=await json(response);
+      if(!response.ok)throw Error(data.error||'Unable to send code.');
+      status.textContent=data.message||'Code sent. Check your email.';
+      fields.classList.remove('hidden');
+      code.focus();
+    }catch(error){status.textContent=error.message}
+    finally{button.disabled=false}
+  }
+
+  async function verifyCode(){
+    if(!code.reportValidity())return;
+    status.textContent='Checking code…';
+    try{
+      const response=await fetch('/api/admin/auth/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:email.value.trim(),code:code.value.trim()})});
+      const data=await json(response);
+      if(!response.ok)throw Error(data.error||'Unable to sign in.');
+      sessionStorage.setItem('vipoapAdminSession',data.token);
+      sessionStorage.removeItem('vipoapAdmin');
+      location.href=data.destination||'/admin/';
+    }catch(error){status.textContent=error.message}
+  }
+
+  button.addEventListener('click',requestCode);
+  document.getElementById('verifyCodeButton').addEventListener('click',verifyCode);
+  email.addEventListener('keydown',event=>{if(event.key==='Enter')requestCode()});
+  code.addEventListener('keydown',event=>{if(event.key==='Enter')verifyCode()});
 })();

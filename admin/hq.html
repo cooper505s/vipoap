@@ -15,7 +15,7 @@
 <div class="auth-brand"><img src="../assets/vipoap-os-heart-blue.png" alt=""><div><h1>VIPOAP OS</h1><p class="muted">Administrator sign in</p></div></div>
 <p>Use the VIPOAP administrator password to open central operations, customer records, billing and network controls.</p>
 <form id="adminLoginForm"><div class="field"><label for="adminPassword">Administrator password</label><input id="adminPassword" type="password" autocomplete="current-password" required></div><div class="actions"><button class="btn" id="adminLoginButton" type="submit">Open administrator area</button><a class="btn secondary" href="/admin/">Engineer Partner sign in</a></div><p id="adminLoginStatus" class="status" aria-live="polite"></p></form>
-<p class="muted">If the password is no longer known, return to Engineer Partner sign in and request a code using admin@vipoap.co.uk. Cloudflare never reveals the saved password; it can only be replaced.</p>
+<p class="muted"><a href="/admin/?recovery=1">Forgot password?</a> Request a one-time sign-in code using admin@vipoap.co.uk. Cloudflare never reveals the saved password; it can only be replaced.</p>
 </main>
 <script>
 const form=document.getElementById('adminLoginForm'),password=document.getElementById('adminPassword'),button=document.getElementById('adminLoginButton'),status=document.getElementById('adminLoginStatus');

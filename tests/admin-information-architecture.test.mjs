@@ -8,8 +8,8 @@ const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
 test('owner sees everything while partners cannot access central administration',()=>{
   assert.deepEqual(BUILT_IN_ROLES.owner.permissions,['*']);
   assert.ok(PERMISSIONS.includes('manage_marketing'));
-  for(const permission of ['manage_calls','manage_customers','manage_followups','view_training','manage_marketing','report_incidents'])assert.ok(BUILT_IN_ROLES.operator.permissions.includes(permission));
-  for(const permission of ['manage_operations','manage_billing','view_franchise','manage_roles','manage_operators'])assert.ok(!BUILT_IN_ROLES.operator.permissions.includes(permission));
+  for(const permission of ['manage_calls','view_training','manage_marketing','report_incidents'])assert.ok(BUILT_IN_ROLES.operator.permissions.includes(permission));
+  for(const permission of ['view_dashboard','manage_customers','manage_followups','manage_equipment','manage_recordings','manage_operations','manage_billing','view_franchise','manage_roles','manage_operators','export_data'])assert.ok(!BUILT_IN_ROLES.operator.permissions.includes(permission));
   for(const permission of ['manage_operations','manage_billing','view_franchise','manage_operators'])assert.ok(BUILT_IN_ROLES.admin.permissions.includes(permission));
   assert.ok(!BUILT_IN_ROLES.admin.permissions.includes('manage_roles'));
 });
@@ -22,15 +22,20 @@ test('every page declares its workspace permission',()=>{
     'admin/billing.html':'manage_billing','admin/franchise.html':'view_franchise'
   };
   for(const [file,permission] of Object.entries(expected))assert.match(read(file),new RegExp(`data-page-permission="${permission}"`),file);
+  for(const file of ['admin/index.html','admin/safety.html','admin/training.html','admin/knowledge.html','admin/marketing.html'])assert.match(read(file),/data-workspace="engineer"/,file);
+  for(const file of ['admin/os.html','admin/customers.html','admin/health-check.html','admin/help-requests.html','admin/billing.html','admin/franchise.html'])assert.match(read(file),/data-workspace="admin"/,file);
 });
 
 test('navigation clearly separates partner and central admin destinations',()=>{
   const navigation=read('admin/mobile-nav.js');
-  assert.match(navigation,/Partner workspace/);
-  assert.match(navigation,/Admin centre/);
+  assert.doesNotMatch(navigation,/Partner workspace/);
+  assert.doesNotMatch(navigation,/Admin centre/);
   assert.match(navigation,/My work/);
   assert.match(navigation,/Admin overview/);
   assert.match(navigation,/Network & access/);
+  assert.match(navigation,/os-nav-admin/);
+  assert.match(navigation,/Engineer tools/);
+  assert.match(navigation,/Administrator tools/);
   assert.match(navigation,/showDenied/);
   assert.match(navigation,/data-page-permission|pagePermission/);
 });
