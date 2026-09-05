@@ -20,12 +20,13 @@
   const allowed=(permission,permissions)=>permissions.includes('*')||permissions.includes(permission);
   const mobile=document.createElement('nav');mobile.className='os-mobile-nav';mobile.hidden=true;mobile.setAttribute('aria-label','VIPOAP OS navigation');document.body.append(mobile);
   const desktop=document.createElement('nav');desktop.className='os-global-nav';desktop.hidden=true;desktop.setAttribute('aria-label','VIPOAP OS navigation');document.body.insertBefore(desktop,document.body.firstChild);
-  const classes=item=>[isActive(item.href)?'active':'',item.group==='admin'?'os-nav-admin':''].filter(Boolean).join(' ');\n  const link=item=>`<a href="${item.href}" class="${classes(item)}">${item.label}</a>`;
+  const classes=item=>[isActive(item.href)?'active':'',item.group==='admin'?'os-nav-admin':''].filter(Boolean).join(' ');
+  const link=item=>`<a href="${item.href}" class="${classes(item)}">${item.label}</a>`;
   function render(permissions=[]){
     const visible=items.filter(item=>allowed(item.permission,permissions));
-    mobile.innerHTML=visible.map(item=>`<a href="${item.href}" class="${isActive(item.href)?'active':''}"><span>${item.icon}</span>${item.label}</a>`).join('');
-    const partner=visible.filter(item=>item.group==='partner'),admin=visible.filter(item=>item.group==='admin');
-    desktop.innerHTML=(partner.length?`<div class="os-nav-group"><span class="os-nav-label">Partner workspace</span>${partner.map(link).join('')}</div>`:'')+(admin.length?`<div class="os-nav-group"><span class="os-nav-label">Admin centre</span>${admin.map(link).join('')}</div>`:'');
+    mobile.innerHTML=visible.map(item=>`<a href="${item.href}" class="${classes(item)}"><span>${item.icon}</span>${item.label}</a>`).join('');
+    const engineer=visible.filter(item=>item.group==='engineer'),admin=visible.filter(item=>item.group==='admin');
+    desktop.innerHTML=(engineer.length?`<div class="os-nav-group">${engineer.map(link).join('')}</div>`:'')+(admin.length?`<div class="os-nav-group">${admin.map(link).join('')}</div>`:'');
   }
   const headers=()=>({'x-admin-password':sessionStorage.getItem('vipoapAdmin')||'','x-admin-session':sessionStorage.getItem('vipoapAdminSession')||''});
   const signedIn=()=>Boolean(sessionStorage.getItem('vipoapAdmin')||sessionStorage.getItem('vipoapAdminSession'));
