@@ -1,6 +1,6 @@
 (()=>{
   const style=document.createElement('style');
-  style.textContent='.os-mobile-nav{display:none}.os-install{white-space:nowrap}.os-mobile-nav[hidden],.os-global-nav[hidden],[data-requires-permission][hidden]{display:none!important}.os-nav-group{display:flex;align-items:center;gap:4px}.os-nav-group+.os-nav-group{margin-left:auto;padding-left:9px;border-left:1px solid #dbe4ef}.os-global-nav a.os-nav-admin{background:#f6eef9;color:#713b86;border:1px solid #dfcce8}.os-global-nav a.os-nav-admin:hover{background:#eadcf1;color:#512263}.os-global-nav a.os-nav-admin.active{background:#713b86;color:#fff;border-color:#713b86}.os-mobile-nav a.os-nav-admin{color:#713b86;background:#f6eef9}.os-mobile-nav a.os-nav-admin.active{color:#fff;background:linear-gradient(135deg,#713b86,#9b5bb3)}@media(max-width:720px){body{padding-bottom:82px!important}.os-mobile-nav{position:fixed;display:flex;left:8px;right:8px;bottom:8px;z-index:1000;overflow-x:auto;gap:3px;background:rgba(255,255,255,.94);border:1px solid #cbd9ea;border-radius:17px;padding:6px;box-shadow:0 10px 30px rgba(16,41,87,.18);backdrop-filter:blur(14px)}.os-mobile-nav a{display:grid;flex:1 0 54px;gap:2px;text-align:center;padding:7px 3px;border-radius:11px;color:#667085;text-decoration:none;font-size:9px;font-weight:800}.os-mobile-nav a span{font-size:18px;line-height:1}.os-mobile-nav a.active{color:#fff;background:linear-gradient(135deg,#102957,#2765a8)}}';
+  style.textContent='.os-mobile-nav{display:none}.os-install{white-space:nowrap}.os-page-heading>.actions{display:none!important}.os-global-signout{min-height:36px!important;padding:7px 11px!important;border:1px solid #c7d8ec!important;border-radius:999px!important;background:#fff!important;color:#102957!important;font-weight:800!important}.os-mobile-nav[hidden],.os-global-nav[hidden],[data-requires-permission][hidden]{display:none!important}.os-nav-group{display:flex;align-items:center;gap:4px}.os-nav-group+.os-nav-group{margin-left:auto;padding-left:9px;border-left:1px solid #dbe4ef}.os-global-nav a.os-nav-admin{background:#f6eef9;color:#713b86;border:1px solid #dfcce8}.os-global-nav a.os-nav-admin:hover{background:#eadcf1;color:#512263}.os-global-nav a.os-nav-admin.active{background:#713b86;color:#fff;border-color:#713b86}.os-mobile-nav a.os-nav-admin{color:#713b86;background:#f6eef9}.os-mobile-nav a.os-nav-admin.active{color:#fff;background:linear-gradient(135deg,#713b86,#9b5bb3)}@media(max-width:720px){body{padding-bottom:82px!important}.os-mobile-nav{position:fixed;display:flex;left:8px;right:8px;bottom:8px;z-index:1000;overflow-x:auto;gap:3px;background:rgba(255,255,255,.94);border:1px solid #cbd9ea;border-radius:17px;padding:6px;box-shadow:0 10px 30px rgba(16,41,87,.18);backdrop-filter:blur(14px)}.os-mobile-nav a{display:grid;flex:1 0 54px;gap:2px;text-align:center;padding:7px 3px;border-radius:11px;color:#667085;text-decoration:none;font-size:9px;font-weight:800}.os-mobile-nav a span{font-size:18px;line-height:1}.os-mobile-nav a.active{color:#fff;background:linear-gradient(135deg,#102957,#2765a8)}}';
   document.head.append(style);
   const path=location.pathname.replace(/\.html$/,'').replace(/\/$/,'')||'/admin';
   const items=[
@@ -26,7 +26,13 @@
     const visible=items.filter(item=>allowed(item.permission,permissions));
     mobile.innerHTML=visible.map(item=>`<a href="${item.href}" class="${classes(item)}"><span>${item.icon}</span>${item.label}</a>`).join('');
     const engineer=visible.filter(item=>item.group==='engineer'),admin=visible.filter(item=>item.group==='admin');
-    desktop.innerHTML=(engineer.length?`<div class="os-nav-group">${engineer.map(link).join('')}</div>`:'')+(admin.length?`<div class="os-nav-group">${admin.map(link).join('')}</div>`:'');
+    desktop.innerHTML=(engineer.length?`<div class="os-nav-group" aria-label="Engineer tools">${engineer.map(link).join('')}</div>`:'')+(admin.length?`<div class="os-nav-group" aria-label="Administrator tools">${admin.map(link).join('')}</div>`:'');
+  }
+  function ensureSignOut(){
+    const controls=document.querySelector('.os-header-controls');if(!controls||document.getElementById('osGlobalSignOut'))return;
+    const button=document.createElement('button');button.id='osGlobalSignOut';button.type='button';button.className='btn os-global-signout';button.textContent='Sign out';
+    button.onclick=()=>{sessionStorage.removeItem('vipoapAdmin');sessionStorage.removeItem('vipoapAdminSession');location.href='/admin/'};
+    controls.append(button);
   }
   const headers=()=>({'x-admin-password':sessionStorage.getItem('vipoapAdmin')||'','x-admin-session':sessionStorage.getItem('vipoapAdminSession')||''});
   const signedIn=()=>Boolean(sessionStorage.getItem('vipoapAdmin')||sessionStorage.getItem('vipoapAdminSession'));
@@ -42,7 +48,7 @@
     if(!signedIn()){mobile.hidden=true;desktop.hidden=true;if(document.body.dataset.pagePermission&&!document.getElementById('login')&&location.pathname!=='/admin/'&&location.pathname!=='/admin')location.replace('/admin/');return}
     try{
       const response=await fetch('/api/admin/session',{headers:headers()}),data=await response.json();if(!response.ok)throw Error();
-      effectivePermissions=data.permissions||[];render(effectivePermissions);applyVisibility();
+      effectivePermissions=data.permissions||[];render(effectivePermissions);applyVisibility();ensureSignOut();
       const required=document.body.dataset.pagePermission;if(required&&!allowed(required,effectivePermissions)){showDenied(required)}
       mobile.hidden=false;desktop.hidden=false;
     }catch{mobile.hidden=true;desktop.hidden=true}
