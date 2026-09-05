@@ -62,7 +62,12 @@ test('Knowledge Hub is available in the OS shell and uses controlled moderation'
   const page=fs.readFileSync('admin/knowledge.html','utf8'),ui=fs.readFileSync('admin/knowledge.js','utf8'),worker=fs.readFileSync('admin/service-worker.js','utf8');
   assert.match(page,/Engineer Community Knowledge Hub/);
   assert.match(page,/Never include customer names/);
-  assert.match(ui,/sent to HQ for review/i);
+  assert.match(page,/<form class="card" id="articleForm">/);
+  assert.match(page,/minlength="40"/);
+  assert.match(page,/type="submit">Submit article/);
+  assert.match(ui,/addEventListener\('submit',submit\)/);
+  assert.match(ui,/Submitting…/);
+  assert.match(ui,/sent to (VIPOAP )?HQ for review/i);
   assert.doesNotMatch(ui,/authorEmail/);
   assert.match(worker,/\/admin\/knowledge\.js/);
 });

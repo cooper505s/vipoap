@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {digest} from '../functions/_shared/admin-auth.js';
 import {onRequestGet,onRequestPost,onRequestPatch} from '../functions/api/admin/callouts.js';
 
 function environment(){
@@ -7,6 +8,11 @@ function environment(){
   return {values,env:{ADMIN_PASSWORD:'secret',VIPOAP_DATA:{async get(key,type){const value=values.get(key);return type==='json'&&value?JSON.parse(value):value??null},async put(key,value){values.set(key,value)},async list({prefix}){return {keys:[...values.keys()].filter(key=>key.startsWith(prefix)).map(name=>({name}))}}}}};
 }
 function request(method,body,password='secret'){return new Request('https://example.test/api/admin/callouts',{method,headers:{'x-admin-password':password,'content-type':'application/json'},body:body?JSON.stringify(body):undefined})}
+async function operatorRequest(values,method='GET',body){
+  const token='operator-session';
+  values.set(`admin-session:${await digest(token)}`,JSON.stringify({role:'operator',operatorId:'engineer-one',territoryIds:['andover'],email:'engineer@example.test'}));
+  return new Request('https://example.test/api/admin/callouts',{method,headers:{'x-admin-session':token,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});
+}
 const valid={date:'2026-08-08',customerName:'Margaret Test',phone:'01234 567890',postcode:'SP10 1AA',category:'Wi-Fi',duration:60,amountCharged:65,paymentStatus:'paid',summary:'Restored Wi-Fi coverage.',actionsTaken:'Moved mesh unit and reconnected tablet.',recommendations:'Review placement if furniture moves.',followUpRequired:false,followUpDate:'',followUpNotes:'',status:'completed',linkedBookingKey:'booking:2026-08-08:11:00'};
 
 test('rejects unauthorised call-out access',async()=>{const {env}=environment();const response=await onRequestGet({request:request('GET',null,'wrong'),env});assert.equal(response.status,401)});
@@ -14,3 +20,22 @@ test('creates and lists a call-out',async()=>{const {env}=environment();const cr
 test('rejects incomplete call-out details',async()=>{const {env}=environment();const response=await onRequestPost({request:request('POST',{...valid,summary:''}),env});assert.equal(response.status,400)});
 test('rejects an impossible calendar date',async()=>{const {env}=environment();const response=await onRequestPost({request:request('POST',{...valid,date:'2026-02-31'}),env});assert.equal(response.status,400)});
 test('updates an existing call-out',async()=>{const {env}=environment();const created=await (await onRequestPost({request:request('POST',valid),env})).json();const response=await onRequestPatch({request:request('PATCH',{...valid,key:created.key,status:'follow-up',followUpRequired:true,followUpDate:'2026-08-15'}),env});assert.equal(response.status,200);const updated=await env.VIPOAP_DATA.get(created.key,'json');assert.equal(updated.status,'follow-up');assert.equal(updated.followUpRequired,true)});
+
+test('Engineer Partner lists only their own completed visits',async()=>{
+  const{env,values}=environment();
+  values.set('callout:own',JSON.stringify({...valid,id:'own',reference:'CO-OWN',operatorId:'engineer-one',territoryId:'andover'}));
+  values.set('callout:other',JSON.stringify({...valid,id:'other',reference:'CO-OTHER',operatorId:'engineer-two',territoryId:'andover'}));
+  const response=await onRequestGet({request:await operatorRequest(values),env});
+  const data=await response.json();
+  assert.equal(response.status,200);
+  assert.deepEqual(data.callouts.map(item=>item.id),['own']);
+});
+
+test('Engineer Partner can log only an assigned booking',async()=>{
+  const{env,values}=environment();
+  values.set(valid.linkedBookingKey,JSON.stringify({name:'Margaret Test',phone:'01234 567890',postcode:'SP10 1AA',date:'2026-08-08',operatorId:'engineer-one',territoryId:'andover'}));
+  let response=await onRequestPost({request:await operatorRequest(values,'POST',valid),env});
+  assert.equal(response.status,200);
+  response=await onRequestPost({request:await operatorRequest(values,'POST',{...valid,linkedBookingKey:'booking:other'}),env});
+  assert.equal(response.status,403);
+});
