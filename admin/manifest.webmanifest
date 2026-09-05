@@ -1,7 +1,7 @@
 {
   "name": "VIPOAP OS",
   "short_name": "VIPOAP OS",
-  "description": "The private VIPOAP engineer app for customer work, training and the Engineer Knowledge Base.",
+  "description": "The private VIPOAP engineer app for assigned work, training and the Engineer Knowledge Base.",
   "start_url": "/admin/",
   "scope": "/admin/",
   "display": "standalone",
@@ -25,18 +25,6 @@
     {
       "name": "My work",
       "url": "/admin/"
-    },
-    {
-      "name": "Customers",
-      "url": "/admin/customers"
-    },
-    {
-      "name": "Home Health Check",
-      "url": "/admin/health-check"
-    },
-    {
-      "name": "Help requests",
-      "url": "/admin/help-requests"
     },
     {
       "name": "Safety",
