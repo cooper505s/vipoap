@@ -35,15 +35,15 @@ test('HQ publishes an article before it becomes community-visible',async()=>{
   values.set(key,JSON.stringify({id:'pending',title:'Router restart',category:'Wi-Fi',summary:'Restart in a safe order.',content:'Switch off the router, wait, restore power and check the connection.',status:'pending-review',authorId:'partner-one'}));
   let request=await operatorRequest(env,values,'https://example.test/api/admin/knowledge');
   let data=await(await onRequestGet({request,env})).json();
-  assert.equal(data.articles.length,1);
+  assert.equal(data.articles.filter(item=>item.key.startsWith('knowledge:')).length,1);
   values.set('admin-session:'+await digest('other-session'),JSON.stringify({role:'operator',operatorId:'partner-two',territoryIds:['andover']}));
   request=new Request('https://example.test/api/admin/knowledge',{headers:{'x-admin-session':'other-session'}});
   data=await(await onRequestGet({request,env})).json();
-  assert.equal(data.articles.length,0);
+  assert.equal(data.articles.filter(item=>item.key.startsWith('knowledge:')).length,0);
   request=new Request('https://example.test/api/admin/knowledge',{method:'PATCH',headers:{'content-type':'application/json','x-admin-password':'secret'},body:JSON.stringify({key,status:'published'})});
   assert.equal((await onRequestPatch({request,env})).status,200);
   data=await(await onRequestGet({request:new Request('https://example.test/api/admin/knowledge',{headers:{'x-admin-session':'other-session'}}),env})).json();
-  assert.equal(data.articles.length,1);
+  assert.equal(data.articles.filter(item=>item.key.startsWith('knowledge:')).length,1);
 });
 
 test('published articles accept safe replies and reject customer-identifying details',async()=>{

@@ -3,14 +3,16 @@
   var field=document.createElement('div');field.className='field';field.id='paymentChoice';
   field.innerHTML='<label>Payment</label><input type="hidden" name="paymentMethod" value="online"><div class="note" id="paymentHelp"></div>';
   var date=document.getElementById('date');date.parentNode.insertBefore(field,date.parentNode);
-  function priceFor(type,duration){if(type==='Remote support')return duration===30?'£25':'£45';return duration===30?'£39':'£64'}
+  function priceFor(type,duration){if(type==='Remote support')return duration===30?'£25':duration===60?'£45':'£65';return duration===30?'£49':duration===60?'£79':'£109'}
   function update(){
-    var remote=support.value==='Remote support',thirty=document.querySelector('input[name="duration"][value="30"]'),sixty=document.querySelector('input[name="duration"][value="60"]');
+    var remote=support.value==='Remote support',thirty=document.querySelector('input[name="duration"][value="30"]'),sixty=document.querySelector('input[name="duration"][value="60"]'),ninety=document.querySelector('input[name="duration"][value="90"]');
     if(thirty)thirty.disabled=false;
-    var price30=document.getElementById('price30'),price60=document.getElementById('price60'),priceNote=document.getElementById('priceNote');
-    if(price30)price30.textContent=remote?'First 30 minutes — £25':'First 30 minutes — £39';
-    if(price60)price60.textContent=remote?'Up to 60 minutes — £45':'Up to 1 hour — £64';
-    if(priceNote)priceNote.innerHTML=remote?'<strong>£25 for the first 30 minutes.</strong><br>Each additional 30 minutes is £20 and is agreed first. We never unexpectedly call asking for remote access, and we never leave permanent unattended access.':'<strong>Simple home-visit pricing.</strong><br>£39 includes the visit and first 30 minutes. Each additional 30 minutes is £25 and is only charged with your agreement. Local travel is included.';
+    if(ninety)ninety.disabled=false;
+    var price30=document.getElementById('price30'),price60=document.getElementById('price60'),price90=document.getElementById('price90'),priceNote=document.getElementById('priceNote');
+    if(price30)price30.textContent=remote?'First 30 minutes — £25':'First 30 minutes — £49';
+    if(price60)price60.textContent=remote?'Up to 60 minutes — £45':'Up to 1 hour — £79';
+    if(price90)price90.textContent=remote?'Up to 90 minutes — £65':'Up to 90 minutes — £109';
+    if(priceNote)priceNote.innerHTML=remote?'<strong>£25 for the first 30 minutes.</strong><br>Each additional 30 minutes is £20 and is agreed first. We never unexpectedly call asking for remote access, and we never leave permanent unattended access.':'<strong>Simple home-visit pricing.</strong><br>£49 includes the visit and first 30 minutes. Each additional 30 minutes is £30 and is only charged with your agreement. Local travel is included.';
     document.getElementById('paymentHelp').innerHTML='<strong>New customers pay securely in advance.</strong><br>Any additional time is agreed with you first and billed after the appointment.';
   }
   support.addEventListener('change',function(){setTimeout(update,0)});update();

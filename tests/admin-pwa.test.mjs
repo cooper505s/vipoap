@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=file=>fs.readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
-const pages=['admin/index.html','admin/customers.html','admin/os.html','admin/billing.html','admin/franchise.html','admin/training.html','admin/health-check.html','admin/help-requests.html','admin/knowledge.html','admin/marketing.html','admin/safety.html'];
+const pages=['admin/index.html','admin/customers.html','admin/os.html','admin/billing.html','admin/franchise.html','admin/training.html','admin/health-check.html','admin/help-requests.html','admin/knowledge.html','admin/marketing.html','admin/safety.html','admin/my-payments.html'];
 
 test('VIPOAP OS is independently installable and keeps admin shortcuts private',()=>{
   const manifest=JSON.parse(read('admin/manifest.webmanifest'));
@@ -42,7 +42,7 @@ test('OS service worker never intercepts APIs and versions the shared shell',()=
   const navigation=read('admin/mobile-nav.js');
   assert.match(worker,/startsWith\('\/api\/'\)/);
   assert.match(worker,/request\.method!==\'GET\'/);
-  for(const asset of ['vipoap-os-v32','email-login.js?v=6','mobile-nav.js?v=2','knowledge.js?v=2','/admin/hq','header.css','callout-camera.js','billing-settlements.js','availability-calendar.js','operational-health.js','launch-readiness.js','backup-controls.js','restore-controls.js','maintenance-controls.js','distribution-alerts.js','manual-assignment.js','training-assessments.js','zoho-sync.js','reviews.js','connectivity.js','vipoap-os-icon-192','/admin/training','/admin/knowledge','/admin/franchise','/admin/safety'])assert.ok(worker.includes(asset),asset);
+  for(const asset of ['vipoap-os-v34','email-login.js?v=6','mobile-nav.js?v=2','knowledge.js?v=2','/admin/hq','header.css','callout-camera.js','billing-settlements.js','availability-calendar.js','operational-health.js?v=2','launch-readiness.js','backup-controls.js','restore-controls.js','maintenance-controls.js','distribution-alerts.js','manual-assignment.js','training-learning.js?v=1','zoho-sync.js','reviews.js','connectivity.js','vipoap-os-icon-192','/admin/training','/admin/knowledge','/admin/franchise','/admin/safety','/admin/my-payments','my-payments.js'])assert.ok(worker.includes(asset),asset);
   assert.match(navigation,/connectivity\.js/);
 });
 

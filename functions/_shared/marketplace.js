@@ -2,12 +2,12 @@ import {findService,serviceSupports,TECHNOLOGY_CATEGORY} from './service-catalog
 
 const ACTIVE_PRICING={
   home:{
-    30:{customerPence:3900,providerEntitlementPence:2500,platformFeePence:1400},
-    60:{customerPence:6400,providerEntitlementPence:4500,platformFeePence:1900},
-    90:{customerPence:8900,providerEntitlementPence:6500,platformFeePence:2400},
-    120:{customerPence:11400,providerEntitlementPence:8500,platformFeePence:2900}
+    30:{customerPence:4900,providerEntitlementPence:2500,platformFeePence:2400},
+    60:{customerPence:7900,providerEntitlementPence:4500,platformFeePence:3400},
+    90:{customerPence:10900,providerEntitlementPence:6500,platformFeePence:4400},
+    120:{customerPence:13900,providerEntitlementPence:8500,platformFeePence:5400}
   },
-  remote:{30:{customerPence:2500,providerEntitlementPence:0,platformFeePence:2500},60:{customerPence:4500,providerEntitlementPence:0,platformFeePence:4500}}
+  remote:{30:{customerPence:2500,providerEntitlementPence:0,platformFeePence:2500},60:{customerPence:4500,providerEntitlementPence:0,platformFeePence:4500},90:{customerPence:6500,providerEntitlementPence:0,platformFeePence:6500},120:{customerPence:8500,providerEntitlementPence:0,platformFeePence:8500}}
 };
 
 function fulfilmentType(supportType){return String(supportType||'').toLowerCase().includes('remote')?'remote':'home'}

@@ -6,7 +6,7 @@ async function getSettings(env,supportType){if(!env.VIPOAP_DATA)return [{operato
 export async function onRequestGet({request,env}){
   if(!env.VIPOAP_DATA)return Response.json({error:'Booking is temporarily unavailable. Please call 07977 254158.'},{status:503});
   const url=new URL(request.url),date=url.searchParams.get('date'),duration=Number(url.searchParams.get('duration')),supportType=url.searchParams.get('supportType')==='Remote support'?'Remote support':'Home visit';
-  if(!date||![30,60].includes(duration))return Response.json({error:'Choose a valid date and appointment length.'},{status:400});
+  if(!date||![30,60,90].includes(duration))return Response.json({error:'Choose a valid date and appointment length.'},{status:400});
   const chosen=new Date(`${date}T12:00:00Z`);if(Number.isNaN(chosen.getTime())||chosen.toISOString().slice(0,10)!==date)return Response.json({error:'Invalid date.'},{status:400});
   const settings=await getSettings(env,supportType),capacity=new Map();
   for(const setting of settings){if(setting.blockedDates?.includes(date)&&!setting.overrides?.some(item=>item.date===date&&item.status==='available'))continue;const ranges=setting.weekly?.[DAY_NAMES[chosen.getUTCDay()]]||[];for(const [start,end] of ranges){for(let t=start;toMinutes(t)+duration<=toMinutes(end);t=addMinutes(t,30)){if(!capacity.has(t))capacity.set(t,new Set());capacity.get(t).add(setting.operatorId)}}}

@@ -1,84 +1,10 @@
-let password=sessionStorage.getItem('vipoapAdmin')||'';
-let session=sessionStorage.getItem('vipoapAdminSession')||'';
-let articles=[];
-let canModerate=false;
-const $=id=>document.getElementById(id);
-const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const headers=()=>({'content-type':'application/json','x-admin-password':password,'x-admin-session':session});
-
-async function api(url,options={}){
-  const response=await fetch(url,{...options,headers:{...headers(),...options.headers}});
-  const type=response.headers.get('content-type')||'';
-  const data=type.includes('application/json')?await response.json():{error:await response.text()};
-  if(!response.ok)throw Error(data.error||'Knowledge request failed.');
-  return data;
-}
-
-function render(){
-  const q=$('search').value.toLowerCase();
-  const category=$('category').value;
-  const list=articles.filter(item=>(!q||`${item.title} ${item.summary} ${item.content}`.toLowerCase().includes(q))&&(!category||item.category===category));
-  $('articles').innerHTML=list.length?list.map(item=>`<article class="article"><div class="row"><div><span class="pill">${esc(item.category)}</span> <span class="pill">${esc(item.status)}</span><h2>${esc(item.title)}</h2><p><strong>${esc(item.summary)}</strong></p><p>${esc(item.content).replace(/\n/g,'<br>')}</p></div>${canModerate&&item.status==='pending-review'?`<div class="actions"><button class="btn" data-publish="${esc(item.key)}">Publish</button><button class="btn secondary" data-reject="${esc(item.key)}">Reject</button></div>`:''}</div><details><summary>${(item.replies||[]).length} community replies</summary>${(item.replies||[]).map(reply=>`<p><strong>${esc(reply.authorName||'VIPOAP Engineer Partner')}</strong><br>${esc(reply.text)}</p>`).join('')}<textarea data-reply-text="${esc(item.key)}" placeholder="Add a safe practical reply"></textarea><button class="btn secondary" data-reply="${esc(item.key)}">Reply</button></details></article>`).join(''):'<p class="muted">No matching knowledge articles.</p>';
-}
-
-async function load(){
-  const data=await api('/api/admin/knowledge');
-  articles=data.articles||[];
-  canModerate=!!data.canModerate;
-  const options=(data.categories||[]).map(item=>`<option value="${esc(item)}">${esc(item)}</option>`).join('');
-  $('category').innerHTML='<option value="">All categories</option>'+options;
-  $('newCategory').innerHTML='<option value="">Choose a category</option>'+options;
-  render();
-}
-
-async function submit(event){
-  event.preventDefault();
-  const form=$('articleForm');
-  if(!form.reportValidity())return;
-  const button=$('submitArticle');
-  button.disabled=true;
-  button.textContent='Submitting…';
-  $('status').textContent='Sending your article securely…';
-  try{
-    const data=await api('/api/admin/knowledge',{method:'POST',body:JSON.stringify({
-      title:$('title').value.trim(),
-      category:$('newCategory').value,
-      summary:$('summary').value.trim(),
-      content:$('content').value.trim()
-    })});
-    form.reset();
-    $('status').textContent=data.status==='published'?'Article published.':'Article sent to VIPOAP HQ for review.';
-    await load();
-  }catch(error){$('status').textContent=error.message}
-  finally{button.disabled=false;button.textContent='Submit article'}
-}
-
-async function signIn(){
-  password=$('password')?.value||'';
-  try{
-    await load();
-    sessionStorage.setItem('vipoapAdmin',password);
-    $('login').classList.add('hidden');
-    $('app').classList.remove('hidden');
-  }catch(error){if($('loginStatus'))$('loginStatus').textContent=error.message}
-}
-
-$('loginBtn')?.addEventListener('click',signIn);
-$('articleForm').addEventListener('submit',submit);
-$('search').addEventListener('input',render);
-$('category').addEventListener('change',render);
-$('logoutBtn')?.addEventListener('click',()=>{sessionStorage.clear();location.reload()});
-document.addEventListener('click',async event=>{
-  try{
-    if(event.target.dataset.publish)await api('/api/admin/knowledge',{method:'PATCH',body:JSON.stringify({key:event.target.dataset.publish,status:'published'})});
-    else if(event.target.dataset.reject)await api('/api/admin/knowledge',{method:'PATCH',body:JSON.stringify({key:event.target.dataset.reject,status:'rejected'})});
-    else if(event.target.dataset.reply){
-      const key=event.target.dataset.reply;
-      const text=document.querySelector(`[data-reply-text="${CSS.escape(key)}"]`).value;
-      await api('/api/admin/knowledge',{method:'POST',body:JSON.stringify({articleKey:key,reply:text})});
-    }else return;
-    await load();
-  }catch(error){$('status').textContent=error.message}
-});
-
-if(password||session)load().then(()=>{$('login').classList.add('hidden');$('app').classList.remove('hidden')}).catch(()=>sessionStorage.clear());
+let password=sessionStorage.getItem('vipoapAdmin')||'',session=sessionStorage.getItem('vipoapAdminSession')||'',articles=[],canModerate=false,current='';const $=id=>document.getElementById(id),esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])),headers=()=>({'content-type':'application/json','x-admin-password':password,'x-admin-session':session});async function api(url,options={}){const response=await fetch(url,{...options,headers:{...headers(),...options.headers}}),type=response.headers.get('content-type')||'',data=type.includes('application/json')?await response.json():{error:await response.text()};if(!response.ok)throw Error(data.error||'Knowledge request failed.');return data}
+async function load(){const data=await api('/api/admin/knowledge');articles=data.articles||[];canModerate=data.canModerate;$('category').innerHTML='<option value="">All categories</option>'+data.categories.map(value=>`<option>${esc(value)}</option>`).join('');$('newCategory').innerHTML=data.categories.map(value=>`<option>${esc(value)}</option>`).join('');render();$('login').classList.add('hidden');$('app').classList.remove('hidden')}
+function filtered(){const query=$('search').value.toLowerCase(),category=$('category').value;return articles.filter(item=>(!query||`${item.title} ${item.summary} ${item.content}`.toLowerCase().includes(query))&&(!category||item.category===category))}
+function render(){const list=filtered();$('knowledgeCount').textContent=`${list.length} article${list.length===1?'':'s'}`;$('articles').innerHTML=list.length?list.map(item=>`<button class="article-card" data-open-article="${esc(item.key)}" type="button"><span class="article-icon">${item.pinned?'★':'◇'}</span><span><span class="article-tags"><span class="pill">${esc(item.category)}</span>${item.status!=='published'?`<span class="pill review">${esc(item.status)}</span>`:''}</span><strong>${esc(item.title)}</strong><small>${esc(item.summary)}</small></span><span class="article-arrow">→</span></button>`).join(''):'<p class="muted">No articles match that search.</p>';document.querySelectorAll('[data-open-article]').forEach(button=>button.onclick=()=>openArticle(button.dataset.openArticle))}
+function openArticle(key){current=key;const item=articles.find(article=>article.key===key);if(!item)return;const community=!key.startsWith('builtin:'),moderation=canModerate&&item.status==='pending-review'?`<div class="moderation"><button class="btn" data-publish="${esc(key)}">Publish</button><button class="btn secondary" data-reject="${esc(key)}">Reject</button></div>`:'',replies=(item.replies||[]).map(reply=>`<article class="reply"><strong>${esc(reply.authorName)}</strong><p>${esc(reply.text)}</p></article>`).join('');$('articleViewer').innerHTML=`<button class="back" id="closeArticle" type="button">← Back to all articles</button><div class="article-heading"><span class="pill">${esc(item.category)}</span><h2>${esc(item.title)}</h2><p>${esc(item.summary)}</p><small>By ${esc(item.authorName||'VIPOAP Standards')}</small></div><div class="article-content">${esc(item.content).replace(/\n/g,'<br>')}</div>${moderation}<section class="community"><h3>Engineer notes</h3>${replies||'<p class="muted">No community notes yet.</p>'}${community&&item.status==='published'?`<label for="reply">Add a safe practical note</label><textarea id="reply" maxlength="1500" placeholder="Do not include customer-identifying information."></textarea><button class="btn" data-reply="${esc(key)}">Add note</button><p id="replyStatus"></p>`:'<p class="muted">Core standards articles are maintained by VIPOAP HQ.</p>'}</section>`;$('browser').classList.add('hidden');$('articleViewer').classList.remove('hidden');$('closeArticle').onclick=closeArticle;$('[data-publish]')?.addEventListener('click',()=>moderate(key,'published'));$('[data-reject]')?.addEventListener('click',()=>moderate(key,'rejected'));$('[data-reply]')?.addEventListener('click',()=>reply(key));$('articleViewer').scrollIntoView({block:'start'})}
+function closeArticle(){current='';$('articleViewer').classList.add('hidden');$('browser').classList.remove('hidden')}
+async function moderate(key,status){await api('/api/admin/knowledge',{method:'PATCH',body:JSON.stringify({key,status})});await load();closeArticle()}
+async function reply(key){const output=$('replyStatus');try{await api('/api/admin/knowledge',{method:'POST',body:JSON.stringify({articleKey:key,reply:$('reply').value})});output.textContent='Note added.';await load();openArticle(key)}catch(error){output.textContent=error.message}}
+async function submit(event){event.preventDefault();const button=$('submitArticle');button.disabled=true;button.textContent='Submitting…';$('status').textContent='';try{const result=await api('/api/admin/knowledge',{method:'POST',body:JSON.stringify({title:$('title').value,category:$('newCategory').value,summary:$('summary').value,content:$('content').value})});event.target.reset();$('status').textContent=result.status==='published'?'Article published.':'Article sent to VIPOAP HQ for review.';await load()}catch(error){$('status').textContent=error.message}finally{button.disabled=false;button.textContent='Submit article'}}
+async function signIn(){password=$('password').value;try{await load();sessionStorage.setItem('vipoapAdmin',password)}catch(error){$('loginStatus').textContent=error.message}}$('loginBtn').onclick=signIn;$('password').onkeydown=event=>{if(event.key==='Enter')signIn()};$('search').oninput=render;$('category').onchange=render;$('articleForm').addEventListener('submit',submit);$('logoutBtn').onclick=()=>{sessionStorage.clear();location.reload()};(async()=>{if(password||session)try{await load()}catch{sessionStorage.clear()}})();

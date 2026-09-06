@@ -16,9 +16,9 @@ New backend concepts use **provider** as the generic term. A provider may later 
 
 Home visits now use the marketplace launch model:
 
-- first 30 minutes: customer £39 / provider £25 / VIPOAP gross fee £14
-- 60 minutes: customer £64 / provider £45 / VIPOAP gross fee £19
-- 90 minutes: customer £89 / provider £65 / VIPOAP gross fee £24
+- first 30 minutes: customer £49 / provider £25 / VIPOAP gross fee £24
+- 60 minutes: customer £79 / provider £45 / VIPOAP gross fee £34
+- 90 minutes: customer £109 / provider £65 / VIPOAP gross fee £44
 - 120 minutes: customer £114 / provider £85 / VIPOAP gross fee £29
 - each additional 30 minutes after the first block adds £25 customer price and £20 provider entitlement
 

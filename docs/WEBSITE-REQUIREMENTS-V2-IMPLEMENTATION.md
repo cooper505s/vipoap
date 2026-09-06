@@ -6,8 +6,8 @@ This file tracks the implementation brief supplied in August 2026. It is an oper
 
 - Inclusive positioning for all ages, while retaining patient support for older and less-confident customers.
 - Equal promotion of home visits and remote support.
-- Home visit pricing: £30 first hour and £10 per agreed additional 30 minutes.
-- Remote pricing: £15 first 30 minutes, £25 up to 60 minutes and £10 per agreed additional 30 minutes.
+- Home visit pricing: £49 first 30 minutes and £30 per agreed additional 30 minutes.
+- Remote pricing: £25 first 30 minutes and £20 per agreed additional 30 minutes.
 - £15 late-cancellation/no-show wording, free cancellation until one hour before the appointment and exceptional-circumstance waiver wording.
 - Payment-after-support wording and separate prepaid equipment-purchase wording.
 - Booking fields for support type, address, postcode, problem description, preferred time, contact details, notification channel and optional accessibility notes.

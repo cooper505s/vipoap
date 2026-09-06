@@ -5,6 +5,7 @@
   const path=location.pathname.replace(/\.html$/,'').replace(/\/$/,'')||'/admin';
   const items=[
     {href:'/admin',icon:'▣',label:'My work',permission:'manage_calls',group:'engineer'},
+    {href:'/admin/my-payments',icon:'£',label:'My payments',permission:'manage_calls',group:'engineer'},
     {href:'/admin/safety',icon:'!',label:'Safety',permission:'report_incidents',group:'engineer'},
     {href:'/admin/training',icon:'✓',label:'Training',permission:'view_training',group:'engineer'},
     {href:'/admin/knowledge',icon:'◇',label:'Knowledge',permission:'view_training',group:'engineer'},
