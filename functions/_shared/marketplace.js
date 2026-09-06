@@ -47,6 +47,9 @@ export async function resolveBookingPricingFromEnvironment(env,{categoryId,servi
       LIMIT 1
     `).bind(fulfilment,serviceId,categoryId,territoryId,today).first();
     if(!row)return fallback;
+    // The founding Technology rule is release-managed so a pending D1 migration
+    // can never put an old customer or Engineer Partner price back into checkout.
+    if(row.id==='technology-home-standard')return fallback;
     const minutes=Number(duration),baseMinutes=Number(row.base_minutes||minutes||0),incrementMinutes=Number(row.increment_minutes||0);
     let customerPence=Number(row.customer_base_pence||0),providerEntitlementPence=Number(row.provider_base_pence||0);
     if(row.billing_model==='time_blocks'&&incrementMinutes>0&&minutes>baseMinutes){
