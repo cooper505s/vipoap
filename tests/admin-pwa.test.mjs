@@ -18,7 +18,7 @@ test('every OS workspace is installable and includes permission-aware navigation
   for(const page of pages){
     const html=read(page);
     assert.match(html,/manifest\.webmanifest/);
-    assert.match(html,/mobile-nav\.js\?v=2/);
+    assert.match(html,/mobile-nav\.js\?v=(2|3)/);
     assert.match(html,/apple-mobile-web-app-capable/);
   }
 });
@@ -42,8 +42,9 @@ test('OS service worker never intercepts APIs and versions the shared shell',()=
   const navigation=read('admin/mobile-nav.js');
   assert.match(worker,/startsWith\('\/api\/'\)/);
   assert.match(worker,/request\.method!==\'GET\'/);
-  for(const asset of ['vipoap-os-v35','email-login.js?v=6','mobile-nav.js?v=2','knowledge.js?v=2','/admin/hq','header.css','callout-camera.js','billing-settlements.js','availability-calendar.js','operational-health.js?v=2','launch-readiness.js','backup-controls.js','restore-controls.js','maintenance-controls.js','distribution-alerts.js','manual-assignment.js','training-learning.js?v=1','zoho-sync.js','reviews.js','connectivity.js','vipoap-os-icon-192','/admin/training','/admin/knowledge','/admin/franchise','/admin/safety','/admin/my-payments','my-payments.js'])assert.ok(worker.includes(asset),asset);
+  for(const asset of ['vipoap-os-v37','email-login.js?v=6','mobile-nav.js?v=3','knowledge.js?v=2','/admin/hq','header.css','callout-camera.js','billing-settlements.js','availability-calendar.js','operational-health.js?v=2','launch-readiness.js','backup-controls.js','restore-controls.js','maintenance-controls.js','distribution-alerts.js','manual-assignment.js','training-learning.js?v=2','ticket-workspace.js?v=1','control-overview.js?v=1','zoho-sync.js','reviews.js','connectivity.js','vipoap-os-icon-192','/admin/training','/admin/knowledge','/admin/franchise','/admin/safety','/admin/my-payments','my-payments.js'])assert.ok(worker.includes(asset),asset);
   assert.match(navigation,/connectivity\.js/);
+  assert.match(navigation,/vipoap-os-icon-192/);
 });
 
 test('engineers have a confidential safety and stop-work interface',()=>{

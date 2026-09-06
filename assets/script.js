@@ -1,4 +1,7 @@
 (function () {
+  var favicon=document.querySelector('link[rel~="icon"]')||document.createElement('link');
+  favicon.rel='icon';favicon.type='image/png';favicon.href='/assets/favicon-32.png';
+  if(!favicon.isConnected)document.head.appendChild(favicon);
   if(!document.querySelector('link[data-vipoap-high-contrast]')){
     var contrastCss=document.createElement('link');
     contrastCss.rel='stylesheet';contrastCss.href='assets/high-contrast.css';contrastCss.dataset.vipoapHighContrast='true';

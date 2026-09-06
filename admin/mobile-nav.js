@@ -1,4 +1,7 @@
 (()=>{
+  const icon=document.querySelector('link[rel~="icon"]')||document.createElement('link');
+  icon.rel='icon';icon.type='image/png';icon.href='/assets/vipoap-os-icon-192.png?v=4';
+  if(!icon.isConnected)document.head.append(icon);
   const style=document.createElement('style');
   style.textContent='.os-mobile-nav{display:none}.os-install{white-space:nowrap}.os-page-heading>.actions{display:none!important}.os-global-signout{min-height:36px!important;padding:7px 11px!important;border:1px solid #c7d8ec!important;border-radius:999px!important;background:#fff!important;color:#102957!important;font-weight:800!important}.os-mobile-nav[hidden],.os-global-nav[hidden],[data-requires-permission][hidden]{display:none!important}.os-nav-group{display:flex;align-items:center;gap:4px}.os-nav-group+.os-nav-group{margin-left:auto;padding-left:9px;border-left:1px solid #dbe4ef}.os-global-nav a.os-nav-admin{background:#f6eef9;color:#713b86;border:1px solid #dfcce8}.os-global-nav a.os-nav-admin:hover{background:#eadcf1;color:#512263}.os-global-nav a.os-nav-admin.active{background:#713b86;color:#fff;border-color:#713b86}.os-mobile-nav a.os-nav-admin{color:#713b86;background:#f6eef9}.os-mobile-nav a.os-nav-admin.active{color:#fff;background:linear-gradient(135deg,#713b86,#9b5bb3)}@media(max-width:720px){body{padding-bottom:82px!important}.os-mobile-nav{position:fixed;display:flex;left:8px;right:8px;bottom:8px;z-index:1000;overflow-x:auto;gap:3px;background:rgba(255,255,255,.94);border:1px solid #cbd9ea;border-radius:17px;padding:6px;box-shadow:0 10px 30px rgba(16,41,87,.18);backdrop-filter:blur(14px)}.os-mobile-nav a{display:grid;flex:1 0 54px;gap:2px;text-align:center;padding:7px 3px;border-radius:11px;color:#667085;text-decoration:none;font-size:9px;font-weight:800}.os-mobile-nav a span{font-size:18px;line-height:1}.os-mobile-nav a.active{color:#fff;background:linear-gradient(135deg,#102957,#2765a8)}}';
   document.head.append(style);
@@ -6,16 +9,14 @@
   const items=[
     {href:'/admin',icon:'▣',label:'My work',permission:'manage_calls',group:'engineer'},
     {href:'/admin/my-payments',icon:'£',label:'My payments',permission:'manage_calls',group:'engineer'},
-    {href:'/admin/safety',icon:'!',label:'Safety',permission:'report_incidents',group:'engineer'},
     {href:'/admin/training',icon:'✓',label:'Training',permission:'view_training',group:'engineer'},
     {href:'/admin/knowledge',icon:'◇',label:'Knowledge',permission:'view_training',group:'engineer'},
+    {href:'/admin/safety',icon:'!',label:'Safety',permission:'report_incidents',group:'engineer'},
     {href:'/admin/marketing',icon:'◆',label:'Marketing',permission:'manage_marketing',group:'engineer'},
     {href:'/admin/os',icon:'⌂',label:'Admin overview',permission:'manage_operations',group:'admin'},
+    {href:'/admin/franchise',icon:'◎',label:'Engineers & access',permission:'view_franchise',group:'admin'},
     {href:'/admin/customers',icon:'♟',label:'Customers',permission:'manage_customers',group:'admin'},
-    {href:'/admin/health-check',icon:'♡',label:'Health check',permission:'manage_customers',group:'admin'},
-    {href:'/admin/help-requests',icon:'?',label:'Help requests',permission:'manage_followups',group:'admin'},
-    {href:'/admin/billing',icon:'£',label:'Billing',permission:'manage_billing',group:'admin'},
-    {href:'/admin/franchise',icon:'◎',label:'Network & access',permission:'view_franchise',group:'admin'}
+    {href:'/admin/billing',icon:'£',label:'Billing',permission:'manage_billing',group:'admin'}
   ];
   const isActive=href=>path===href.replace(/\/$/,'');
   const allowed=(permission,permissions)=>permissions.includes('*')||permissions.includes(permission);

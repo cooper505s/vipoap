@@ -32,7 +32,9 @@ test('navigation clearly separates partner and central admin destinations',()=>{
   assert.doesNotMatch(navigation,/Admin centre/);
   assert.match(navigation,/My work/);
   assert.match(navigation,/Admin overview/);
-  assert.match(navigation,/Network & access/);
+  assert.match(navigation,/Engineers & access/);
+  assert.doesNotMatch(navigation,/label:'Health check'/);
+  assert.doesNotMatch(navigation,/label:'Help requests'/);
   assert.match(navigation,/os-nav-admin/);
   assert.match(navigation,/Engineer tools/);
   assert.match(navigation,/Administrator tools/);

@@ -1,0 +1,16 @@
+import {requireCustomer} from '../../_shared/customer-auth.js';
+import {audit} from '../../_shared/audit.js';
+const clean=(value,max=800)=>String(value??'').trim().replace(/[<>]/g,'').slice(0,max);
+const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+async function notify(env,customer,record){if(!env.RESEND_API_KEY||!env.BOOKING_FROM_EMAIL)return false;const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${env.RESEND_API_KEY}`,'content-type':'application/json','idempotency-key':`${record.reference}-membership-request`},body:JSON.stringify({from:env.BOOKING_FROM_EMAIL,to:['help@vipoap.co.uk'],subject:`Membership request — ${record.reference}`,html:`<h2>Customer membership request</h2><p><strong>${escapeHtml(customer.name)}</strong> has requested: ${escapeHtml(record.description)}</p>`})});return response.ok}
+export async function onRequestPost({request,env}){
+  const session=await requireCustomer(request,env);if(!session)return Response.json({error:'Please sign in.'},{status:401});
+  let body;try{body=await request.json()}catch{return Response.json({error:'Please check the request.'},{status:400})}
+  const action=clean(body.action,20),plan=clean(body.plan,20),note=clean(body.note,800);if(!['change','pause','cancel'].includes(action)||action==='change'&&!['support','family'].includes(plan))return Response.json({error:'Choose a valid membership request.'},{status:400});
+  const customer=await env.VIPOAP_DATA.get(session.customerId,'json');if(!customer)return Response.json({error:'Account not found.'},{status:404});
+  if(customer.membershipRequestStatus==='received')return Response.json({error:'A membership request is already being reviewed.'},{status:409});
+  const now=new Date().toISOString(),reference=`HELP-${now.slice(5,10).replace('-','')}${crypto.randomUUID().slice(0,4).toUpperCase()}`,description=action==='change'?`Change membership to ${plan}. ${note}`.trim():`${action==='pause'?'Discuss pausing membership':'Cancel future membership renewals'}. ${note}`.trim(),key=`help-request:${now.slice(0,10)}:${reference}`,record={customerId:session.customerId,name:customer.name||'',email:customer.email||session.email||'',phone:customer.phone||'',postcode:customer.postcode||'',contactPreference:customer.preferredContact||'Email',territoryId:customer.territoryId||'andover',category:'membership',membershipAction:action,requestedPlan:action==='change'?plan:'',reference,status:'received',description,messages:[{author:'customer',text:description,createdAt:now}],createdAt:now,updatedAt:now};
+  await env.VIPOAP_DATA.put(key,JSON.stringify(record));await env.VIPOAP_DATA.put(`help-reference:${reference}`,key);await env.VIPOAP_DATA.put(session.customerId,JSON.stringify({...customer,membershipRequestStatus:'received',membershipRequestReference:reference,membershipRequestAction:action,membershipRequestAt:now,updatedAt:now}));
+  await Promise.allSettled([notify(env,customer,record),audit(env,{email:session.email,operatorId:'customer'},'request-membership-change','customer',session.customerId,{action,plan:action==='change'?plan:'',reference})]);
+  return Response.json({ok:true,reference,status:'received'});
+}
