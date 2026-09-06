@@ -32,7 +32,7 @@ test('navigation clearly separates partner and central admin destinations',()=>{
   assert.doesNotMatch(navigation,/Admin centre/);
   assert.match(navigation,/My work/);
   assert.match(navigation,/Admin overview/);
-  assert.match(navigation,/Engineers & access/);
+  assert.match(navigation,/label:'Network'/);
   assert.doesNotMatch(navigation,/label:'Health check'/);
   assert.doesNotMatch(navigation,/label:'Help requests'/);
   assert.match(navigation,/os-nav-admin/);
@@ -40,6 +40,14 @@ test('navigation clearly separates partner and central admin destinations',()=>{
   assert.match(navigation,/Administrator tools/);
   assert.match(navigation,/showDenied/);
   assert.match(navigation,/data-page-permission|pagePermission/);
+});
+
+test('the network workspace uses clean labels without corrupted separators',()=>{
+  const page=read('admin/franchise.html');
+  assert.match(page,/<title>Network \| VIPOAP OS<\/title>/);
+  assert.match(page,/<h2>Network<\/h2>/);
+  assert.match(page,/Area owner/);
+  assert.doesNotMatch(page,/Â|Ã|�/);
 });
 
 test('mixed pages hide privileged tools from partner roles',()=>{

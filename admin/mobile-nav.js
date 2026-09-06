@@ -14,7 +14,7 @@
     {href:'/admin/safety',icon:'!',label:'Safety',permission:'report_incidents',group:'engineer'},
     {href:'/admin/marketing',icon:'◆',label:'Marketing',permission:'manage_marketing',group:'engineer'},
     {href:'/admin/os',icon:'⌂',label:'Admin overview',permission:'manage_operations',group:'admin'},
-    {href:'/admin/franchise',icon:'◎',label:'Engineers & access',permission:'view_franchise',group:'admin'},
+    {href:'/admin/franchise',icon:'◎',label:'Network',permission:'view_franchise',group:'admin'},
     {href:'/admin/customers',icon:'♟',label:'Customers',permission:'manage_customers',group:'admin'},
     {href:'/admin/billing',icon:'£',label:'Billing',permission:'manage_billing',group:'admin'}
   ];
