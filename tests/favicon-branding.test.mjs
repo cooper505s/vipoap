@@ -15,5 +15,5 @@ test('customer pages and app use the green VIPOAP browser icon',()=>{
 test('every partner and admin page receives the blue VIPOAP OS browser icon',()=>{
   const navigation=read('admin/mobile-nav.js');
   assert.match(navigation,/vipoap-os-icon-192\.png/);
-  for(const file of fs.readdirSync(new URL('../admin',import.meta.url)).filter(name=>name.endsWith('.html'))){const html=read(`admin/${file}`);assert.ok(/mobile-nav\.js\?v=3/.test(html)||/vipoap-os-icon-192\.png/.test(html),file)}
+  for(const file of fs.readdirSync(new URL('../admin',import.meta.url)).filter(name=>name.endsWith('.html'))){const html=read(`admin/${file}`);assert.ok(/mobile-nav\.js\?v=(3|4)/.test(html)||/vipoap-os-icon-192\.png/.test(html),file)}
 });

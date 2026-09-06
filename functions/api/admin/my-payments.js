@@ -10,8 +10,9 @@ function taxYear(date=new Date()){
   return{label:`${startYear}/${String(startYear+1).slice(-2)}`,from:`${startYear}-04-06`,to:`${startYear+1}-04-05`};
 }
 function calculatedEntitlement(item,rules){
-  if(Number(item.providerEntitlementPence)>0)return Number(item.providerEntitlementPence);
-  const minutes=Math.max(30,Number(item.duration)||30),home=item.supportType!=='Remote support',base=home?rules.engineerEntitlements.homeFirst30:rules.engineerEntitlements.remote30,increment=home?rules.engineerEntitlements.homeAdditional30:rules.engineerEntitlements.remoteAdditional30;
+  const home=item.supportType!=='Remote support',paid=Boolean(item.providerPaidAt||item.providerPaymentStatus==='paid');
+  if(Number(item.providerEntitlementPence)>0&&(home||paid))return Number(item.providerEntitlementPence);
+  const minutes=Math.max(30,Number(item.duration)||30),base=home?rules.engineerEntitlements.homeFirst30:rules.engineerEntitlements.remote30,increment=home?rules.engineerEntitlements.homeAdditional30:rules.engineerEntitlements.remoteAdditional30;
   return Math.round((base+Math.max(0,Math.ceil((minutes-30)/30))*increment)*100);
 }
 export async function onRequestGet({request,env}){

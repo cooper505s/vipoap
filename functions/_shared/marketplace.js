@@ -7,7 +7,12 @@ const ACTIVE_PRICING={
     90:{customerPence:10900,providerEntitlementPence:6500,platformFeePence:4400},
     120:{customerPence:13900,providerEntitlementPence:8500,platformFeePence:5400}
   },
-  remote:{30:{customerPence:2500,providerEntitlementPence:0,platformFeePence:2500},60:{customerPence:4500,providerEntitlementPence:0,platformFeePence:4500},90:{customerPence:6500,providerEntitlementPence:0,platformFeePence:6500},120:{customerPence:8500,providerEntitlementPence:0,platformFeePence:8500}}
+  remote:{
+    30:{customerPence:2500,providerEntitlementPence:1750,platformFeePence:750},
+    60:{customerPence:4500,providerEntitlementPence:3150,platformFeePence:1350},
+    90:{customerPence:6500,providerEntitlementPence:4550,platformFeePence:1950},
+    120:{customerPence:8500,providerEntitlementPence:5950,platformFeePence:2550}
+  }
 };
 
 function fulfilmentType(supportType){return String(supportType||'').toLowerCase().includes('remote')?'remote':'home'}
@@ -49,7 +54,7 @@ export async function resolveBookingPricingFromEnvironment(env,{categoryId,servi
     if(!row)return fallback;
     // The founding Technology rule is release-managed so a pending D1 migration
     // can never put an old customer or Engineer Partner price back into checkout.
-    if(row.id==='technology-home-standard')return fallback;
+    if(['technology-home-standard','technology-remote-standard'].includes(row.id))return fallback;
     const minutes=Number(duration),baseMinutes=Number(row.base_minutes||minutes||0),incrementMinutes=Number(row.increment_minutes||0);
     let customerPence=Number(row.customer_base_pence||0),providerEntitlementPence=Number(row.provider_base_pence||0);
     if(row.billing_model==='time_blocks'&&incrementMinutes>0&&minutes>baseMinutes){

@@ -6,7 +6,7 @@ async function records(kv,prefix){const page=await kv.list({prefix});return(awai
 const engineerId=item=>item.operatorId||item.assignedEngineerId||item.engineerId||'';
 const completed=item=>['completed','complete','partially-resolved','unresolved'].includes(String(item.jobStatus||item.bookingStatus||item.status||'').toLowerCase());
 const open=item=>!['completed','complete','resolved','closed','cancelled','declined'].includes(String(item.jobStatus||item.bookingStatus||item.status||'').toLowerCase());
-const entitlement=(item,rules)=>{const stored=Number(item.providerEntitlementPence||0),minutes=Math.max(30,Number(item.duration)||30),home=item.supportType!=='Remote support',base=home?rules.engineerEntitlements.homeFirst30:rules.engineerEntitlements.remote30,increment=home?rules.engineerEntitlements.homeAdditional30:rules.engineerEntitlements.remoteAdditional30;return(stored||Math.round((base+Math.max(0,Math.ceil((minutes-30)/30))*increment)*100))+Number(item.providerAdditionalEntitlementPence||0)};
+const entitlement=(item,rules)=>{const stored=Number(item.providerEntitlementPence||0),minutes=Math.max(30,Number(item.duration)||30),home=item.supportType!=='Remote support',base=home?rules.engineerEntitlements.homeFirst30:rules.engineerEntitlements.remote30,increment=home?rules.engineerEntitlements.homeAdditional30:rules.engineerEntitlements.remoteAdditional30,basePence=stored&&home?stored:Math.round((base+Math.max(0,Math.ceil((minutes-30)/30))*increment)*100);return basePence+Number(item.providerAdditionalEntitlementPence||0)};
 
 export async function onRequestGet({request,env}){
   const context=await adminContext(request,env);

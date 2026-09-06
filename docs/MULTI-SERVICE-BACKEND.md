@@ -19,10 +19,10 @@ Home visits now use the marketplace launch model:
 - first 30 minutes: customer £49 / provider £25 / VIPOAP gross fee £24
 - 60 minutes: customer £79 / provider £45 / VIPOAP gross fee £34
 - 90 minutes: customer £109 / provider £65 / VIPOAP gross fee £44
-- 120 minutes: customer £114 / provider £85 / VIPOAP gross fee £29
-- each additional 30 minutes after the first block adds £25 customer price and £20 provider entitlement
+- 120 minutes: customer £139 / provider £85 / VIPOAP gross fee £54
+- each additional 30 minutes after the first block adds £30 customer price and £20 provider entitlement
 
-Remote support remains on the existing launch prices until separately revised: £15 for 30 minutes and £25 for 60 minutes.
+Remote support uses a 70% Engineer Partner share: customer £25 / provider £17.50 for the first 30 minutes, then customer £20 / provider £14 for each additional 30 minutes. A 60-minute remote session is therefore £45 to the customer and £31.50 to the Engineer Partner.
 
 Customer amounts, provider entitlements and VIPOAP fees are stored independently so VAT/payment/accounting treatment can be applied to the correct supply once the final marketplace structure is signed off.
 

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#102957">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VIPOAP OS">
+<title>Admin helpdesk | VIPOAP OS</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/vipoap-os-icon-192.png?v=4">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="header.css?v=5">
+<link rel="stylesheet" href="ticket-workspace.css?v=2">
+<style>
+:root{--g:#5A8F5A;--n:#102957;--c:#F7F3EC;--p:#edf5ea;--l:#dfe7dd;--m:#667085}*{box-sizing:border-box}body{margin:0;background:var(--c);color:var(--n);font-family:Quicksand,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}.shell{max-width:1240px;margin:auto;padding:20px}.card{background:#fff;border:1px solid var(--l);border-radius:18px;padding:20px;margin-bottom:18px}.login{max-width:440px;margin:8vh auto}.top,.row,.actions{display:flex;align-items:center;justify-content:space-between;gap:12px}.btn{display:inline-block;border:0;border-radius:11px;padding:11px 14px;font-weight:800;text-decoration:none;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#fff;color:var(--g);border:2px solid var(--g)}.quiet,.pill{background:var(--p);color:var(--n)}.pill{display:inline-block;padding:4px 8px;border-radius:99px;font-size:.8rem;font-weight:800}.muted{color:var(--m)}.hidden{display:none!important}.field{margin:12px 0}label{display:block;font-weight:800;margin-bottom:5px}input,select,textarea{width:100%;padding:12px;border:1px solid #bdcbb9;border-radius:11px;background:#fff;color:var(--n)}@media(max-width:720px){.shell{padding:10px}.card{padding:15px}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body data-page-permission="manage_operations" data-workspace="admin">
+<main class="shell">
+<section id="login" class="card login"><img src="../assets/vipoap-os-heart-blue.png" alt="VIPOAP" width="110"><h1>Admin helpdesk</h1><p class="muted">Sign in to view and manage every ticket.</p><div class="field"><label for="password">Admin password</label><input id="password" type="password" autocomplete="current-password"></div><button class="btn primary" id="loginBtn">Sign in</button><p id="loginStatus" aria-live="polite"></p></section>
+<section id="os" class="hidden"><header class="top card os-page-header"><a class="os-brand" href="/admin/os" aria-label="VIPOAP OS admin overview"><img src="../assets/vipoap-os-heart-blue.png" alt=""><div><h1>VIPOAP OS</h1><p class="muted">Administration portal</p></div></a><div class="os-header-controls"><span class="os-portal-badge">Secure workspace</span><span class="os-install-slot" aria-live="polite"></span></div></header><section class="os-page-heading"><div><h2>Admin helpdesk</h2><p class="muted">All bookings, customer requests, escalations, repeat calls and follow-ups in one place</p></div><div class="actions"><a class="btn secondary" href="os">Admin overview</a></div></section></section>
+</main>
+<script>
+let adminPassword=sessionStorage.getItem('vipoapAdmin')||'',adminSession=sessionStorage.getItem('vipoapAdminSession')||'';const $=id=>document.getElementById(id),headers=()=>({'content-type':'application/json','x-admin-password':adminPassword,'x-admin-session':adminSession});async function check(){const response=await fetch('/api/admin/tickets',{headers:headers()}),data=await response.json();if(!response.ok)throw Error(data.error||'Sign-in failed.');return data}async function signIn(){adminPassword=$('password').value;$('loginStatus').textContent='Signing in…';try{await check();sessionStorage.setItem('vipoapAdmin',adminPassword);$('login').classList.add('hidden');$('os').classList.remove('hidden')}catch(error){$('loginStatus').textContent=error.message}}$('loginBtn').onclick=signIn;$('password').onkeydown=event=>{if(event.key==='Enter')signIn()};(async()=>{if(adminPassword||adminSession)try{await check();$('login').classList.add('hidden');$('os').classList.remove('hidden')}catch{sessionStorage.removeItem('vipoapAdmin');sessionStorage.removeItem('vipoapAdminSession')}})();
+</script>
+<script src="email-login.js?v=6"></script>
+<script src="ticket-workspace.js?v=3"></script>
+<script src="mobile-nav.js?v=4"></script>
+</body>
+</html>

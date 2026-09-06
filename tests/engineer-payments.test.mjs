@@ -17,7 +17,7 @@ test('Engineer Partners see only their own completed work and payout totals',asy
   values.set('booking:alex-waiting',JSON.stringify({reference:'VIP-WAITING',operatorId:'alex',territoryId:'andover',jobStatus:'completed',completedAt:'2026-08-22T10:00:00Z',service:'Printer',supportType:'Remote support',duration:30,providerEntitlementPence:1250}));
   values.set('booking:other',JSON.stringify({reference:'VIP-OTHER',operatorId:'sam',territoryId:'andover',status:'completed',completedAt:'2026-08-21T10:00:00Z',providerEntitlementPence:9999}));
   const response=await onRequestGet({request:new Request('https://example.test/api/admin/my-payments?operatorId=sam',{headers:{'x-admin-session':token}}),env}),data=await response.json();
-  assert.equal(response.status,200);assert.equal(data.operatorId,'alex');assert.deepEqual(data.payments.map(item=>item.reference),['VIP-WAITING','VIP-PAID']);assert.equal(data.summary.paidPence,6500);assert.equal(data.summary.awaitingPence,1250);assert.equal(data.canManage,false);
+  assert.equal(response.status,200);assert.equal(data.operatorId,'alex');assert.deepEqual(data.payments.map(item=>item.reference),['VIP-WAITING','VIP-PAID']);assert.equal(data.summary.paidPence,6500);assert.equal(data.summary.awaitingPence,1750);assert.equal(data.canManage,false);
   const denied=await onRequestPatch({request:new Request('https://example.test/api/admin/my-payments',{method:'PATCH',headers:{'content-type':'application/json','x-admin-session':token},body:JSON.stringify({key:'booking:alex-waiting',status:'paid'})}),env});assert.equal(denied.status,403);
 });
 
@@ -30,5 +30,5 @@ test('HQ can record an engineer payout with a payment reference',async()=>{
 
 test('the private portal exposes payment history and a CSV tax record',async()=>{
   const html=await readFile(new URL('../admin/my-payments.html',import.meta.url),'utf8'),script=await readFile(new URL('../admin/my-payments.js',import.meta.url),'utf8'),nav=await readFile(new URL('../admin/mobile-nav.js',import.meta.url),'utf8');
-  assert.match(html,/Payment history/i);assert.match(html,/tax return/i);assert.match(script,/text\/csv/);assert.match(script,/Mark paid/);assert.match(nav,/My payments/);
+  assert.match(html,/Payment history/i);assert.match(html,/tax return/i);assert.match(html,/£17\.50 for the first 30 minutes/i);assert.match(html,/£14 for each additional 30 minutes/i);assert.match(html,/70%/);assert.match(script,/text\/csv/);assert.match(script,/Mark paid/);assert.match(nav,/My payments/);
 });
