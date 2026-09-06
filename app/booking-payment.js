@@ -9,7 +9,7 @@
     if(thirty)thirty.disabled=false;
     if(ninety)ninety.disabled=false;
     var price30=document.getElementById('price30'),price60=document.getElementById('price60'),price90=document.getElementById('price90'),priceNote=document.getElementById('priceNote');
-    if(price30)price30.textContent=remote?'First 30 minutes — £25':'First 30 minutes — £49';
+    if(price30)price30.textContent=remote?'First 30 minutes — £25':'Home visit — £49 (up to 30 minutes)';
     if(price60)price60.textContent=remote?'Up to 60 minutes — £45':'Up to 1 hour — £79';
     if(price90)price90.textContent=remote?'Up to 90 minutes — £65':'Up to 90 minutes — £109';
     if(priceNote)priceNote.innerHTML=remote?'<strong>£25 for the first 30 minutes.</strong><br>Each additional 30 minutes is £20 and is agreed first. We never unexpectedly call asking for remote access, and we never leave permanent unattended access.':'<strong>Simple home-visit pricing.</strong><br>£49 includes the visit and first 30 minutes. Each additional 30 minutes is £30 and is only charged with your agreement. Local travel is included.';

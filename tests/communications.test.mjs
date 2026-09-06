@@ -69,6 +69,7 @@ test('customer overview includes the controlled communication workspace',()=>{
   const worker=fs.readFileSync('admin/service-worker.js','utf8');
   assert.match(page,/customer-communications\.js/);
   assert.match(ui,/Preferred contact/);
+  assert.match(ui,/data-whatsapp-option disabled/);
   assert.match(ui,/SMS\/WhatsApp delivery is not connected yet/);
   assert.match(worker,/customer-communications\.js/);
 });
