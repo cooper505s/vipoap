@@ -1,0 +1,140 @@
+.public-consistent .page-hero {
+  padding: 38px 0 44px;
+  background: linear-gradient(135deg, #fffdf9, #f7f3ec);
+}
+
+.public-consistent .page-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr);
+  gap: 42px;
+  align-items: center;
+  background: linear-gradient(125deg, #fffdf8, #f5efe5);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  padding: 44px;
+}
+
+.public-consistent .page-hero h1 {
+  max-width: 15ch;
+  font-size: clamp(2.55rem, 4vw, 4.05rem);
+  line-height: 1.08;
+  letter-spacing: -.025em;
+}
+
+.public-consistent .page-hero p,
+.public-consistent .page-hero .lead {
+  max-width: 48ch;
+  color: var(--muted);
+  font-size: 1.12rem;
+  line-height: 1.65;
+}
+
+.public-consistent .page-hero .section-head {
+  max-width: none;
+  margin: 0;
+  text-align: left;
+}
+
+.public-consistent .page-hero figure {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+.public-consistent .page-hero figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 22px;
+}
+
+.public-consistent .hero-side-stack { gap: 16px; }
+
+.public-consistent .hero-side-stack .page-hero-card,
+.public-consistent .hero-side-stack .promise-card {
+  padding: 26px;
+  border-radius: 22px;
+}
+
+.public-consistent .help-card h2 {
+  font-size: 1.55rem;
+  line-height: 1.2;
+}
+
+.services-page .page-hero-visual img { object-position: 78% center; }
+
+.services-page .pricing-grid {
+  width: 100%;
+  max-width: none;
+}
+
+.services-page .pricing-grid .price-card {
+  align-items: center;
+  padding: 36px;
+  text-align: center;
+}
+
+.services-page .pricing-grid .price-card p { max-width: 48ch; }
+.contact-page .contact-choice-grid { margin-top: 26px; }
+
+.family-page .process-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.family-page .process-grid article {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.family-page .process-grid article > strong {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  color: #fff;
+  background: var(--green);
+  border-radius: 50%;
+}
+
+@media (max-width: 980px) {
+  .public-consistent .page-hero-grid {
+    grid-template-columns: 1fr;
+    padding: 34px;
+  }
+
+  .public-consistent .page-hero h1 { max-width: 20ch; }
+
+  .public-consistent .page-hero figure {
+    max-width: 760px;
+    margin-inline: auto;
+  }
+
+  .family-page .process-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 680px) {
+  .public-consistent .page-hero { padding: 22px 0 34px; }
+
+  .public-consistent .page-hero-grid {
+    gap: 26px;
+    padding: 24px;
+    border-radius: 22px;
+  }
+
+  .public-consistent .page-hero h1 { font-size: 2.45rem; }
+  .services-page .pricing-grid .price-card { padding: 28px 22px; }
+  .family-page .process-grid { grid-template-columns: 1fr; }
+}
