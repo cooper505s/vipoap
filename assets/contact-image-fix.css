@@ -1,0 +1,7 @@
+.contact-page .page-hero .wide-page-visual img {
+  height: auto;
+  max-height: none;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  object-position: center;
+}
