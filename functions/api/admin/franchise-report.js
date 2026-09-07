@@ -1,5 +1,7 @@
 import {adminContext} from '../../_shared/admin-auth.js';
 import {hasPermission} from '../../_shared/permissions.js';
+import {platformRules} from '../../_shared/platform-rules.js';
+import {providerEntitlementPence} from '../../_shared/provider-entitlement.js';
 
 async function records(kv,prefix){
   const keys=await kv.list({prefix});
@@ -31,9 +33,9 @@ export async function onRequestGet({request,env}){
   const directOutstandingCallouts=callouts.filter(x=>['unpaid','invoiced'].includes(x.paymentStatus)&&!invoicedCalloutKeys.has(x.key));
   const revenueFor=id=>paidInvoices.filter(x=>territoryOf(x)===id).reduce((s,x)=>s+Number(x.total||0),0)+directPaidCallouts.filter(x=>territoryOf(x)===id).reduce((s,x)=>s+Number(x.amountCharged||0),0);
   const revenue=paidInvoices.reduce((s,x)=>s+Number(x.total||0),0)+directPaidCallouts.reduce((s,x)=>s+Number(x.amountCharged||0),0);
-  const paidPartnerCalls=completedCallouts.filter(x=>x.paymentStatus==='paid'||paidInvoices.some(i=>i.calloutKey===x.key));
-  const engineerPayout=paidPartnerCalls.length*25,vipoapCommission=Math.max(0,revenue-engineerPayout);
+  const paidPartnerCalls=completedCallouts.filter(x=>x.paymentStatus==='paid'||paidInvoices.some(i=>i.calloutKey===x.key)),rules=await platformRules(env);
+  const engineerPayout=paidPartnerCalls.reduce((sum,item)=>sum+providerEntitlementPence(item,rules)/100,0),vipoapCommission=Math.max(0,revenue-engineerPayout);
   const outstanding=outstandingInvoices.reduce((s,x)=>s+Number(x.total||0),0)+directOutstandingCallouts.reduce((s,x)=>s+Number(x.amountCharged||0),0);
   const territories=[...new Set([...customers,...bookings,...callouts,...invoices].map(territoryOf))];
-  return Response.json({territory:requested||'all-authorised',metrics:{territories:territories.length,customers:customers.length,members:customers.filter(x=>x.membershipStatus==='active').length,bookings:bookings.length,completedCallouts:completedVisits.length,revenue,engineerPayout,vipoapCommission,outstanding,averageInvoice:completedVisits.length?revenue/completedVisits.length:0},commercialModel:{standardCustomerPrice:30,memberCustomerPrice:30,engineerPayment:25,standardCommission:5,memberCommission:5,membershipHomeVisitDiscount:0},completedVisits:completedVisits.slice(0,50),byTerritory:territories.map(id=>({id,customers:customers.filter(x=>territoryOf(x)===id).length,callouts:completedVisits.filter(x=>x.territoryId===id).length,revenue:revenueFor(id)}))});
+  return Response.json({territory:requested||'all-authorised',metrics:{territories:territories.length,customers:customers.length,members:customers.filter(x=>x.membershipStatus==='active').length,bookings:bookings.length,completedCallouts:completedVisits.length,revenue,engineerPayout,vipoapCommission,outstanding,averageInvoice:completedVisits.length?revenue/completedVisits.length:0},commercialModel:{homeVisitFirst30:rules.prices.homeFirst30,homeVisitFirstHour:rules.prices.homeFirstHour,homeAdditional30:rules.prices.homeAdditional30,remoteFirst30:rules.prices.remote30,remoteAdditional30:rules.prices.remoteAdditional30,engineerHomeFirst30:rules.engineerEntitlements.homeFirst30,engineerRemoteFirst30:rules.engineerEntitlements.remote30,membershipMonthly:rules.membership.supportMonthly,membershipHomeVisitDiscount:rules.membership.homeVisitDiscount},completedVisits:completedVisits.slice(0,50),byTerritory:territories.map(id=>({id,customers:customers.filter(x=>territoryOf(x)===id).length,callouts:completedVisits.filter(x=>x.territoryId===id).length,revenue:revenueFor(id)}))});
 }
