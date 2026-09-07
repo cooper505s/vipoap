@@ -1,0 +1,14 @@
+.about-page .page-hero .promise-card,
+.about-page .page-hero .promise-card h2 {
+  color: #fff;
+}
+
+.about-page .page-hero .promise-card p {
+  color: #e7eef5;
+}
+
+html.contrast .about-page .page-hero .promise-card,
+html.contrast .about-page .page-hero .promise-card h2,
+html.contrast .about-page .page-hero .promise-card p {
+  color: #fff;
+}
