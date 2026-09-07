@@ -1,0 +1,83 @@
+.family-explainer {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: 28px;
+  align-items: center;
+  background: linear-gradient(135deg, #eef5ec, #fff);
+}
+
+.family-explainer h3 {
+  font-size: 1.65rem;
+  margin: 0 0 8px;
+}
+
+.family-explainer ol {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: family-step;
+}
+
+.family-explainer li {
+  counter-increment: family-step;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 14px;
+}
+
+.family-explainer li::before {
+  content: counter(family-step);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.family-explainer li span,
+.family-layout .check span small,
+.family-layout .field small {
+  display: block;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.permission-presets {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.text-button.inline {
+  display: inline-block;
+  margin: 0;
+  padding: 8px;
+}
+
+.family-layout .check span,
+.family-layout .check strong {
+  display: block;
+}
+
+@media (max-width: 950px) {
+  .family-explainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .family-explainer ol {
+    grid-template-columns: 1fr;
+  }
+}

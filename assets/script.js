@@ -53,6 +53,15 @@
   }
 
   var primaryNav = document.querySelector('.main-nav .nav-row');
+  document.querySelectorAll('a[href="app/#book"]').forEach(function(link){link.href='book.html'});
+  var appNavLink = primaryNav && primaryNav.querySelector('.app-nav-link');
+  if (appNavLink) {
+    appNavLink.href = 'app/';
+    appNavLink.textContent = 'VIPOAP App';
+    appNavLink.setAttribute('aria-label', 'Open or install the VIPOAP app');
+    appNavLink.removeAttribute('aria-current');
+    appNavLink.classList.remove('active');
+  }
   if (primaryNav && !primaryNav.querySelector('[href="membership.html"]')) {
     var membershipLink = document.createElement('a');
     membershipLink.href = 'membership.html';
