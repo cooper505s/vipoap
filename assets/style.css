@@ -160,14 +160,22 @@ html.contrast .main-nav a.app-nav-link{
 }
 .page-hero-visual img{min-height:260px;aspect-ratio:3/2}
 .wide-page-visual{max-width:980px;margin:26px auto 30px}
-.wide-page-visual img{max-height:340px;aspect-ratio:16/7;object-position:center}
+.wide-page-visual img{
+  display:block;
+  height:auto;
+  aspect-ratio:3/2;
+  object-fit:contain;
+  object-position:center;
+}
 .utility-page-art{
+  display:block;
   width:100%;
-  max-height:300px;
+  height:auto;
+  aspect-ratio:3/2;
   margin:18px 0 26px;
   border:1px solid var(--line);
   border-radius:20px;
-  object-fit:cover;
+  object-fit:contain;
   object-position:center;
 }
 .hero-side-stack .page-hero-card,
@@ -182,5 +190,5 @@ html.contrast .wide-page-visual{border-color:#fff;background:#000}
   .hero-side-stack{grid-template-columns:1fr}
   .page-hero-visual img{min-height:0;aspect-ratio:4/3}
   .wide-page-visual{margin:20px auto 24px}
-  .wide-page-visual img{aspect-ratio:4/3;max-height:none}
+  .wide-page-visual img{aspect-ratio:3/2}
 }
