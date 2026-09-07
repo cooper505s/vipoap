@@ -52,6 +52,30 @@
     });
   }
 
+  var primaryNav = document.querySelector('.main-nav .nav-row');
+  if (primaryNav && !primaryNav.querySelector('[href="membership.html"]')) {
+    var membershipLink = document.createElement('a');
+    membershipLink.href = 'membership.html';
+    membershipLink.textContent = 'Membership';
+    var familyLink = primaryNav.querySelector('[href="family-support.html"]');
+    var contactLink = primaryNav.querySelector('[href="contact.html"]');
+    primaryNav.insertBefore(membershipLink, familyLink || contactLink || primaryNav.querySelector('.app-nav-link'));
+  }
+  if (primaryNav && /\/membership(?:\.html)?$/.test(location.pathname)) {
+    var currentMembershipLink = primaryNav.querySelector('[href="membership.html"]');
+    if (currentMembershipLink) {
+      currentMembershipLink.classList.add('active');
+      currentMembershipLink.setAttribute('aria-current', 'page');
+    }
+  }
+  var footerNav = document.querySelector('.footer-nav');
+  if (footerNav && !footerNav.querySelector('[href="membership.html"]')) {
+    var footerMembership = document.createElement('a');
+    footerMembership.href = 'membership.html';
+    footerMembership.textContent = 'Membership';
+    footerNav.insertBefore(footerMembership, footerNav.querySelector('[href="contact.html"]'));
+  }
+
   var navToggle = document.getElementById('navToggle');
   var siteNav = document.getElementById('siteNav');
   if (navToggle && siteNav) {
