@@ -1,8 +1,8 @@
 export const DEFAULT_RULES=Object.freeze({
-  version:'v5-sustainable-membership',
+  version:'v6-member-service-discounts',
   prices:{homeFirst30:49,homeFirstHour:79,homeAdditional30:30,remote30:25,remote60:45,remoteAdditional30:20,lateCancellation:15},
   engineerEntitlements:{homeFirst30:25,homeFirstHour:45,homeAdditional30:20,remote30:17.5,remote60:31.5,remoteAdditional30:14,lateCancellation:15},
-  membership:{supportMonthly:7.99,supportAnnual:79,familyMonthly:12.99,familyAnnual:129,remoteMinutes:0,memberRemote30:20,engineerRemote30:14,familyPeople:3,homeVisitDiscount:0},
+  membership:{supportMonthly:7.99,supportAnnual:79,familyMonthly:12.99,familyAnnual:129,remoteMinutes:0,memberRemote30:20,engineerRemote30:14,familyPeople:3,homeVisitDiscount:5},
   booking:{homeRadiusMiles:5,cancellationNoticeMinutes:60,slotHoldMinutes:10},
   onboarding:{home:69,remote:39},
   features:{franchiseCommercial:false,regionalPricing:false,operatorRevenueShare:false,remoteRecording:true}

@@ -2,3 +2,4 @@
 
 .guides-hero .wide-page-visual{max-width:820px}
 .guides-hero .wide-page-visual img{display:block;width:100%;height:auto;max-height:none;aspect-ratio:3/2;object-fit:contain;object-position:center}
+.guides-hero-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(420px,1.1fr);gap:42px;align-items:center}.guides-hero .section-head{text-align:left;max-width:680px;margin:0}.guides-hero .wide-page-visual{max-width:none;margin:0}.guides-hero .wide-page-visual img{border-radius:22px}.guides-search{max-width:none;margin:24px 0 0}.guide-card h2{font-size:clamp(1.35rem,2vw,1.75rem)}@media(max-width:900px){.guides-hero-grid{grid-template-columns:1fr}.guides-hero .wide-page-visual{max-width:760px;margin:auto}}@media(max-width:680px){.guides-hero-grid{gap:24px}.guides-hero .wide-page-visual img{border-radius:16px}}

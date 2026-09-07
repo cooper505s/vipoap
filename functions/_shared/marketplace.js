@@ -35,8 +35,14 @@ export function resolveBookingPricing({supportType,duration}){
 
 export async function applyMembershipPricing(env,pricing,customer,{supportType,duration}){
   const plan=customer?.membershipPlan||customer?.membership||'none';
-  if(!pricing||supportType!=='Remote support'||customer?.membershipStatus!=='active'||!['support','family'].includes(plan))return pricing;
-  const rules=await platformRules(env),blocks=Math.ceil(Number(duration)/30),customerPence=Math.round(blocks*Number(rules.membership.memberRemote30||20)*100),providerEntitlementPence=Math.round(blocks*Number(rules.membership.engineerRemote30||14)*100);
+  if(!pricing||customer?.membershipStatus!=='active'||!['support','family'].includes(plan))return pricing;
+  const rules=await platformRules(env);
+  if(supportType==='Home visit'){
+    const customerPence=Math.max(0,pricing.customerPence-Math.round(Number(rules.membership.homeVisitDiscount||5)*100));
+    return{...pricing,pricingRuleId:`technology-home-member-${duration}`,customerPence,platformFeePence:Math.max(0,customerPence-pricing.providerEntitlementPence),price:money(customerPence),source:'membership'};
+  }
+  if(supportType!=='Remote support')return pricing;
+  const blocks=Math.ceil(Number(duration)/30),customerPence=Math.round(blocks*Number(rules.membership.memberRemote30||20)*100),providerEntitlementPence=Math.round(blocks*Number(rules.membership.engineerRemote30||14)*100);
   return{...pricing,pricingRuleId:`technology-remote-member-${duration}`,billingModel:'time_blocks',customerPence,providerEntitlementPence,platformFeePence:Math.max(0,customerPence-providerEntitlementPence),price:money(customerPence),source:'membership'};
 }
 
