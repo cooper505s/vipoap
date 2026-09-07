@@ -14,6 +14,6 @@ export async function membershipEntitlement(env,customerId,personId=''){
   const minutesUsed=usage.reduce((sum,x)=>sum+Number(x.minutes||0),0),allowance=active&&['support','family'].includes(plan)?rules.membership.remoteMinutes:0;
   const people=Array.isArray(customer.membershipPeople)?customer.membershipPeople:[];
   const personCovered=plan!=='family'||!personId||people.some(x=>(x.id||x.customerId)===personId);
-  return{customerId,plan,active,personCovered,period,allowanceMinutes:allowance,minutesUsed,minutesRemaining:Math.max(0,allowance-minutesUsed),priorityBooking:active,annualCheckupAvailable:active&&!customer.annualCheckupCompletedAt};
+  return{customerId,plan,active,personCovered,period,allowanceMinutes:allowance,minutesUsed,minutesRemaining:Math.max(0,allowance-minutesUsed),memberRemotePrice:Number(rules.membership.memberRemote30||20),memberRemoteMinutes:30,priorityBooking:active,annualCheckupAvailable:active&&!customer.annualCheckupCompletedAt};
 }
 
