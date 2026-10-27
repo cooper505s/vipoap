@@ -243,9 +243,11 @@ The stages overlap in design, not in unreviewed production access. Prioritise re
 GitHub is the shared source of truth, not either model's chat history.
 
 - **Owner:** decides product scope, economics, branding, approvals and deployments.
-- **ChatGPT/Codex:** requirements, acceptance scenarios, architecture challenge, security/privacy/code review and tests; may implement bounded work in separately owned branches.
-- **Claude Code:** implementation of assigned bounded milestones, updated docs and tests, pull requests.
+- **Codex:** full implementation contributor across frontend, backend, integrations, tests, migrations and documentation; also supports requirements and independent review of separately assigned work.
+- **Claude Code:** equally valid implementation contributor across frontend, backend, integrations, tests, migrations and documentation; also supports quality review.
 - **Coordinator (future option):** programmatic GitHub-triggered task routing, limited review iterations, budget ceilings and approval requests. ChatGPT and Claude consumer chat windows do not talk autonomously without integration.
+
+**Staged implementation plan:** [VIPOAP 2.0 — Staged Build Plan for Codex and Claude Code](./VIPOAP-2-STAGED-BUILD-PLAN.md). Both assistants may develop substantial parts of the platform. Assign non-overlapping work by issue; prioritise fulfilling an initial paid booking and regional pilot before adding the broader AI workforce.
 
 **Repository workflow:** Because \`development\` diverged from \`main\`, first reconcile it by owner-approved procedure. Until then start documentation/review branches from \`main\`, and keep the implementation base consistent. Every change uses a fresh branch and a PR; no competing agent writes to the same files; require explicit task issue, architecture contract, PR review, tests and owner merge. Do not auto-merge or auto-deploy. Add protected-branch policies and GitHub Actions gates as allowed by repo/settings.
 
