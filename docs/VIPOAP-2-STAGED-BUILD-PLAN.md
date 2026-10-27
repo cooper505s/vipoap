@@ -1,41 +1,40 @@
-# VIPOAP 2.0 — Staged Build Plan for Codex and Claude Code
+# VIPOAP 2.0 — Codex-First Staged Build Plan (Claude Optional)
 
 **Status:** Draft implementation plan for owner approval · **Date:** 27 October 2026  
 **Source of truth:** [VIPOAP 2.0 Master Specification](./VIPOAP-2-MASTER-SPEC.md) · **Repository base:** `main` after the audit/reconciliation gate.
 
 > This is a planning document, not permission to alter production. The existing `development` branch diverges from `main`. The plan does not assert any feature has been built, tested or deployed. Scope, timescales and costs require an actual repository and environment audit.
 
-## 1. Operating model: both coding assistants build software
+## 1. Operating model — Codex builds, Claude is optional
 
 - **Owner (Managing Director):** chooses priorities, approves scope, pricing, spending, risk decisions and production releases.
-- **Codex:** a **full implementation contributor**. It can build frontend, backend, integrations, tests, migrations and documentation on bounded tasks, not merely audit or review Claude's work.
-- **Claude Code:** an **equally valid implementation contributor** across frontend, backend, integrations, tests, migrations and documentation.
-- **Lead/assignee per issue:** determined by availability, suitable context and code ownership rather than a permanent model-specific division. An illustrative division below is not exclusive.
-- **Independent reviewer:** another coding assistant may review the PR, but automated reviews do not replace required human approval for finance/security/privacy or production deployment.
-- **Coordination:** GitHub issues and PRs are the shared record. Neither conversational assistant is assumed to be monitoring the other's sessions automatically; handoffs require explicit commits, issue updates and PR links or a separately approved orchestrator.
+- **Codex — default and primary developer:** executes the technical audit and can deliver **all stages** of frontend, backend, integrations, migrations, tests, documentation and GitHub pull requests. A task never needs Claude Code in order to begin or finish.
+- **Claude Code — optional only:** if the owner chooses, request a second opinion on a tricky design, a security/payment-sensitive pull request, or a difficult defect. The owner might **never use Claude**. Do not automatically assign tasks to Claude or treat a Claude review as a release prerequisite.
+- **Quality assurance:** Codex must run automated checks and document its own changes, but self-review alone is not sufficient assurance for high-risk code. Use required **human/qualified independent review** and specialised testing where warranted. That does **not** mean Claude must be involved.
+- **Coordination:** GitHub issues and PRs hold the scope, evidence, decisions and progress; no assumption that separate AI sessions communicate or run in the background.
 
-### Rules for parallel development
-1. Audit `main` and the live configuration before modifying architecture. Reconcile `development` without blindly merging either direction.
-2. Create **one tracked GitHub issue per small deliverable** with user journey, impacted files/APIs, acceptance criteria, security/privacy concerns and tests.
-3. Both assistants branch from the **same approved integration base**; each task has **one active file owner**. Separate concerns, not simply screens, to prevent concurrent edits to migrations, auth, route registration or shared schemas.
-4. Agree interface contracts (types, endpoints, schema migrations, events) before dependent frontend/backend changes. Use mocks or fixtures while counterpart tasks are in progress.
-5. Open focused PRs with proof of tests, screenshots for UI changes, migration/rollback plans and compatibility notes; use cross-review when helpful.
-6. Protect `main`, run automated checks, resolve conflicts on the task branch and merge sequentially. No silent AI commits to production; no unapproved auto-merge or deployment.
-7. Each stage ends with a **human acceptance gate**. Backlog may be reprioritised based on real customer and engineer feedback.
+### Rules for Codex-first development
+1. Audit `main` and the live configuration before changing architecture. Reconcile the diverged `development` branch carefully; never blindly merge histories.
+2. Define one small, testable GitHub issue per deliverable, including the journey, APIs/files, acceptance tests, privacy/security controls and completion evidence.
+3. Codex works on **short-lived branches** from the approved integration base. Avoid overlapping modifications if several Codex tasks or agents run concurrently; reserve shared migrations, authentication and core schemas to one active owner at a time.
+4. Agree typed API and event contracts before dependent UI/backend work. Use fixtures/mocks to avoid blocked UI development.
+5. Open focused PRs with test results, screenshots for UI changes, migration/rollback notes, and explicit human sign-off where appropriate. An optional Claude review can supplement, not replace, quality gates.
+6. Protect `main`, require automated checks, merge sequentially after review, and do not auto-deploy or silently change production.
+7. Each stage has a **human acceptance gate**. Prioritise proven customer value and engineer fulfilment, not feature count.
 
-## 2. Build order — prioritise the first paid, successfully fulfilled booking
+## 2. Build order — Codex owns every stage by default
 
-| Stage | Main outcome | Example Codex work | Example Claude Code work | Exit / acceptance gate |
-| --- | --- | --- | --- | --- |
-| **0. Audit and architecture** | Know what exists and what's safe to reuse | Read-only audit of APIs, booking concurrency, payments, auth, DB/KV/D1, tests | Read-only audit of customer/engineer/admin pages, accessibility, training and journey gaps | Owner approves reuse/refactor/replace register, risks, shared data authority, branch policy and MVP tickets |
-| **1. Common foundations** | Reliable identities, bookings, events and observability | Implement agreed transactional booking and payment foundations, authorisation, core APIs and test harness | Build shared design components, role-aware navigation, UI shell and API-contract fixtures | Auth/permissions, money flows, slot contention, duplicate events, logging, backups and rollback demonstrated |
-| **2. First paid service (MVP)** | One locality can market, book, allocate, perform and settle genuine jobs | Engineer eligibility and **fair rotating timed offers** with atomic assignment; payment/settlement tests | Public site, **AI-first Get Help with prominent direct booking**, guest booking, engineer My Work job flow | Test customer can see price, book without membership, get honest pending/confirmed status, receive service, see receipt; engineer can accept, close and be paid; human support fallback |
-| **3. Membership and family** | Convert first-time customers into subscribers | Membership entitlements, Stripe subscription events, family consent/granular permissions, invoice reconciliation | Accessible My Home dashboard, membership comparison, onboarding, two-household family management | Pay As You Go remains available; Support £7.99, Family £12.99, Complete £24.99 are configurable *proposed* launch rates; Family up to three named people across two households; pricing and entitlements approved against costs |
-| **4. Household tech care and follow-up** | Offer recurring value outside a repair visit | Tech Passport records, warranty/renewal jobs, secure uploads, recommendation catalog/pricing/versioning and communication controls | My Technology and My Appointments, easy-to-read **Recommended for Your Home** message/page, no-pressure booking and preference controls | Engineer can suggest mesh Wi-Fi or other approved service; lawful email/WhatsApp delivery, disclosed product/installation/total prices and booking attribution work; reminders are accurate |
-| **5. AI operations and management** | Scale administration without unattended high-risk actions | Event-driven coordinator, action tiers, approvals, limits, audit/event log, dashboards, failure recovery and evaluation tests | HQ console, Customer Support/Dispatch/Partner Network interfaces, role scorecards and owner briefings | Operations Manager directs routine specialist workflows; spending, pricing, serious incidents, partner approval/suspension and production releases remain controlled by humans |
-| **6. Pilot learning and expansion** | Repeatably acquire and serve customers in more postcodes | Performance, security, monitoring, deployment hardening, app/offline feasibility, scalable integrations | Engineer/customer mobile refinements, marketing and onboarding optimisation, learning content | Pilot unit economics, customer satisfaction, acceptance/fill rates, partner retention and service quality meet owner-set thresholds before wider launch |
+| Stage | Main outcome | Codex primary deliverables | Exit / acceptance gate |
+| --- | --- | --- | --- |
+| **0. Audit and architecture** | Know what exists and what can safely be reused | Read-only review of Cloudflare bindings, KV/D1, auth, booking, payments, tests **and** all customer, partner and HQ pages, accessibility, training and existing flows | Owner approves reuse/refactor/replace register, risk log, data authority, branch policy and MVP tickets |
+| **1. Common foundations** | Reliable identities, bookings, events and observability | Transactional booking and payment foundations; authorisation; core APIs/tests; shared design system, role navigation and UI shells | Permissions, money flows, slot contention, duplicate events, logging, backups and rollback demonstrated |
+| **2. First paid service (MVP)** | One locality can take, allocate, complete and settle genuine jobs | Public site; **AI-first Get Help and direct human booking option**; guest booking; My Work job flow; approved engineer eligibility; **fair rotating timed offers** and atomic assignments; payments/settlement | Test customer sees real price, books without membership, gets accurate pending/confirmed status, receives service and receipt; engineer accepts, closes and is paid; human support fallback |
+| **3. Membership and family** | Convert suitable first-time customers into subscribers | Subscription events, entitlement calculations, family consent/permissions, invoices; accessible My Home, plan comparison, onboarding and two-household management | Pay As You Go remains available; proposed Support £7.99, Family £12.99, Complete £24.99 configurable and commercially approved; Family up to three people across two households |
+| **4. Household tech care and follow-up** | Offer value outside a repair visit | Home Tech Passport, warranty/renewals, secure uploads; approved recommendation catalogue, permission-based messages, **Recommended for Your Home** customer page and optional follow-up bookings | Lawful email/WhatsApp where consented; item, installation and total prices transparent; reminders accurate; booking attribution works |
+| **5. AI operations and management** | Automate routine administration with boundaries | Event-driven AI coordinator, approvals and action limits, audit trail, evaluations; HQ management dashboards and operational scorecards | AI Operations Manager handles permitted routine tasks, while spending, pricing, serious incidents, engineer suspensions and deployments require human control |
+| **6. Pilot learning and expansion** | Replicate proven service in further postcodes | Performance/security hardening, monitoring, app feasibility, mobile refinements, growth and learning content | Unit economics, customer outcomes, service reliability and engineer fairness meet owner-set pilot thresholds before further rollout |
 
-*Illustrative assignment: Codex and Claude Code may swap or share a stage through **non-overlapping** issues. No time estimate is defensible until Stage 0 completes.*
+**Claude Code is not allocated a stage, task or mandatory review.** It may be invited for a particular second opinion if the owner wants. Time and cost estimates follow Stage 0 audit; none are presumed here.
 
 ## 3. Requirements carried from owner discussions
 
@@ -77,7 +76,7 @@
 14. **RECOMMEND-01** — Versioned recommendations, opt-in message workflows, item/installation prices and bookings.
 15. **OPS-01** — AI approvals/audit, executive briefings, agent metrics and safe action controls.
 
-For each issue the owner/tech lead picks Codex or Claude Code as builder; the other can review when independent review is useful. Don't assign both to the same writable files or schema migration.
+Codex is the default builder on every issue, with appropriate automated tests and human approval for material changes. The owner may optionally request Claude Code for a specific review or second opinion, but no issue depends on using Claude. Avoid simultaneous writes to the same files or schema migration.
 
 ## 5. Release gates, evidence and decisions
 
@@ -92,7 +91,7 @@ For each issue the owner/tech lead picks Codex or Claude Code as builder; the ot
 ## 6. Next executable sequence
 
 1. Owner reviews this plan and confirms **MVP = paid booking + engineer fulfilment in one pilot area**, before most AI sophistication.
-2. Assign the three read-only audit issues in parallel to Codex and Claude Code with **non-overlapping scopes**, and combine findings into one risk/architecture register.
+2. Assign the read-only audit tasks to **Codex** (which can run them sequentially or as non-overlapping parallel tasks under supervision), and combine findings into one risk/architecture register. Claude is not required.
 3. Resolve the branch and data/finance authority decisions.
 4. Create small implementable tickets and explicit API contracts for Stage 1.
 5. Build, test and approve each gated stage; keep production unchanged until a distinct release authorisation.
