@@ -238,18 +238,19 @@ The stages overlap in design, not in unreviewed production access. Prioritise re
 
 **Every launch gate includes:** accessible desktop/mobile journeys; understandable error/recovery states; secure authentication and authorisation tests; automated regression; contract/money reconciliations; tested concurrency and duplicate-event handling; permission/retention review; AI red-team and false-reassurance testing; backup/rollback; human escalation; production environment readiness; written owner sign-off.
 
-## 10. ChatGPT / Codex + Claude development agreement
+## 10. Codex-first development agreement (Claude optional)
 
-GitHub is the shared source of truth, not either model's chat history.
+GitHub is the shared source of truth, not any AI assistant's chat history.
 
 - **Owner:** decides product scope, economics, branding, approvals and deployments.
-- **Codex:** full implementation contributor across frontend, backend, integrations, tests, migrations and documentation; also supports requirements and independent review of separately assigned work.
-- **Claude Code:** equally valid implementation contributor across frontend, backend, integrations, tests, migrations and documentation; also supports quality review.
-- **Coordinator (future option):** programmatic GitHub-triggered task routing, limited review iterations, budget ceilings and approval requests. ChatGPT and Claude consumer chat windows do not talk autonomously without integration.
+- **Codex — primary developer:** delivers the technical audit and all permitted implementation, tests, documentation, integrations, pull requests and fixes, stage by stage. Codex is sufficient as the default coding workflow.
+- **Claude Code — optional second opinion:** only if the owner decides to use it for a particular design question or review. It is **not assigned any mandatory implementation or review role**, and the project must not depend on Claude being used at all.
+- **Review and release quality:** automated tests and evidence are required; appropriate human or specialist review remains important for high-impact financial, security and privacy changes. Claude is never a substitute for that human accountability.
+- **Coordinator (future option):** any programmatic GitHub-triggered task routing or cross-model collaboration would need separate owner approval. ChatGPT, Codex and Claude sessions do not automatically communicate in the background.
 
-**Staged implementation plan:** [VIPOAP 2.0 — Staged Build Plan for Codex and Claude Code](./VIPOAP-2-STAGED-BUILD-PLAN.md). Both assistants may develop substantial parts of the platform. Assign non-overlapping work by issue; prioritise fulfilling an initial paid booking and regional pilot before adding the broader AI workforce.
+**Staged implementation plan:** [VIPOAP 2.0 — Codex-First Staged Build Plan](./VIPOAP-2-STAGED-BUILD-PLAN.md). Codex owns all stages by default, with work scoped as small, non-overlapping GitHub issues. The owner may optionally invite Claude for a second opinion; there is no required two-tool workflow. Prioritise the first genuinely fulfilled, paid booking and engineer pilot before the broader AI workforce.
 
-**Repository workflow:** Because \`development\` diverged from \`main\`, first reconcile it by owner-approved procedure. Until then start documentation/review branches from \`main\`, and keep the implementation base consistent. Every change uses a fresh branch and a PR; no competing agent writes to the same files; require explicit task issue, architecture contract, PR review, tests and owner merge. Do not auto-merge or auto-deploy. Add protected-branch policies and GitHub Actions gates as allowed by repo/settings.
+**Repository workflow:** Because `development` diverged from `main`, reconcile it by an owner-approved procedure. Until then start documentation/review branches from `main`, and keep the implementation base consistent. Every change uses a fresh branch and a PR; avoid competing writes to the same files; require explicit task issue, architecture contract, tests, appropriate human review and owner merge. Do not auto-merge or auto-deploy. Add protected-branch policies and GitHub Actions gates as allowed by repo/settings.
 
 **First proposed issues:**
 1. Audit repo + live Cloudflare bindings and persistence with no writes.
