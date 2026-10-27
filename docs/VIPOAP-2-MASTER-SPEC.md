@@ -316,3 +316,28 @@ Example: The engineer notices weak upstairs Wi-Fi and recommends an approved mes
 - Customer can accept or ignore without follow-up pressure, and can book at a later time from the secure link.
 - HQ can change catalogue entries and prices without code deployments; existing issued quotes retain their effective price/version history.
 - Booking triggers standard payment, availability, cancellation, engineer dispatch and financial reconciliation controls.
+
+
+## 14. Fair engineer allocation — rotating offers with timed escalation
+
+**Owner direction (27 October 2026):** When two or three approved engineers serve an area, work must be spread fairly rather than continually offered to the same highest-ranked engineer. Adopt a **fair, availability-aware rotation with timed individual offers**, not an uncontrolled first-to-tap race. This is a proposed dispatch rule for development, not functionality already live.
+
+### Eligibility and fair selection
+1. First identify engineers who are **approved and authorised for that job category**, available for the proposed appointment, within their agreed coverage and able to meet any service-specific requirements. General vetting/approval is necessary but does not substitute for job-specific competencies.
+2. Among eligible engineers, **prioritise fair distribution of real opportunities** over always rewarding the nearest or quickest engineer. Consider recent offers and completed/assigned jobs over a configurable rolling window (initial proposal: 30 days), normalised for declared availability and relevant job types. Use a deterministic rotating tie-breaker. Review the rule for unintended unfairness.
+3. New eligible engineers must have a meaningful chance of receiving offers. No minimum guaranteed work, and no preference merely because someone responds fastest, has been registered longest or knows the dispatcher.
+4. A prior decline or expired offer should not automatically bar an engineer from future opportunities. Persistent non-response can prompt a check of whether availability settings are accurate, rather than an opaque punitive score. No penalisation for being switched off/unavailable.
+
+### Offer, timeout and fallback
+1. Offer the booking to the next eligible engineer in the fairness rotation, with the job type, approximate location, requested time, expected duration, pay and a clear **Accept / Decline** response.
+2. Give a **configurable short response period** (proposed pilot default: **5 minutes**, subject to testing and different rules for advance bookings). Declining immediately or letting the timer expire automatically moves the offer to the next eligible engineer.
+3. If accepted, atomically reserve/assign the booking to that engineer, expire competing offers, notify the customer when confirmed and prevent double assignment. Do not promise a confirmed appointment before the assignment has actually succeeded.
+4. If no eligible engineer accepts, offer alternative times, remote support where suitable, or an HQ escalation/waitlist. Urgent jobs may use a shorter timed cascade or a carefully controlled parallel-offer fallback, with **one atomic winner** and explicit customer expectations.
+5. Record each offer, expiry, decline, acceptance, assignment and manual override. HQ may override with a reason for customer safety, competence, timing, travel or service continuity; the system must not silently favour one engineer.
+
+### Reporting and acceptance checks
+- The Partner Network dashboard shows **eligible engineers, offers sent, offered-to-accepted conversion, completed jobs, earnings and fair-share distribution by area**, with visibility into different availability levels and job categories.
+- With three equally suitable and equally available engineers, repeated comparable bookings should tend to rotate among them rather than continually going to the same one.
+- If engineer A does not respond within the configured window, the system automatically offers the job to B and then C where eligible, without a dispatcher having to act.
+- If two engineers respond around the same time (including fallback parallel offers), concurrency controls allow **only one valid assignment**.
+- No accepted customer booking disappears because of an unanswered engineer notification; the customer is given timely, accurate pending/confirmed/unavailable status and alternatives.
