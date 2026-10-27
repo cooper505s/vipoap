@@ -278,3 +278,41 @@ The specification is ready to become implementation work only when:
 - a release MVP backlog with estimates and explicit test gates exists.
 
 **No production deployments or code rewrites are authorised by acceptance of this document alone.**
+
+## 13. Engineer-recommended products and services — “Recommended for Your Home”
+
+**Product decision (27 October 2026):** Add a non-pressured advisory follow-up to every applicable engineer job. VIPOAP engineers diagnose and advise; the customer has time to consider recommendations after the appointment, without any obligation to purchase. This applies to **all** approved additional products and services, not only mesh Wi-Fi.
+
+### Engineer journey
+1. During or at the end of a booked job, the engineer can tick **“Recommend a product or service”** (or select multiple catalogue items) in their My Work job form. No recommendation is mandatory and leaving it blank does not penalise the engineer.
+2. Select an item from an HQ-managed, versioned recommendation catalogue, such as mesh Wi-Fi, a Wi-Fi extender, printer setup, smart-home equipment, device replacement, security/backup assistance, training or other VIPOAP services.
+3. Record the customer's particular problem, why the proposed solution may help, useful suitability details and any estimated installation requirements. State uncertainty, compatibility checks or options that require an assessment; avoid unsupported guarantees.
+4. Show the recommendation to the customer, ask whether they want a copy and which communication channel they prefer, and record the permissions needed to send it. The engineer does not need to negotiate or take payment during the visit.
+5. On job close, generate a branded, easy-to-read **“Recommended for Your Home”** summary for review before transmission when required by policy. Send by the customer's permitted channel (email or an authorised WhatsApp business message). Where the relevant marketing permissions are absent, do not send promotional follow-ups.
+6. Store the recommendation and delivery history on the originating job and in the customer portal, with an audit trail and no duplicate messages after retries.
+
+### Customer journey and content
+A recommendation opens a secure, mobile-friendly VIPOAP page that explains:
+- **What we noticed:** the problem discussed with the engineer, expressed in plain English.
+- **Our suggestion:** product/service name, what it does, how it might improve their home, any known limitations or compatibility checks and appropriate alternatives.
+- **Clear costs:** item price, installation labour, any call-out/travel charges, VAT treatment, full estimated total and what is/is not included. Flag estimates and quote expiry; do not imply a guaranteed price when site assessment is needed.
+- **No-pressure choices:** “Book installation”, “Ask a question”, “Save for later” and “No thanks”. There must be no misleading urgency, pre-ticked purchases or automatic add-ons.
+- **Book when ready:** the customer selects an available slot; the normal booking, customer confirmation, engineer matching and payment/authorisation rules apply. Preserve the recommendation-to-booking attribution and avoid creating duplicate orders.
+
+Example: The engineer notices weak upstairs Wi-Fi and recommends an approved mesh Wi-Fi kit. The customer later receives a friendly explanation of coverage benefits and limitations, a separate equipment price and installation estimate, and an optional link to book the installation. The customer can ignore it without pressure.
+
+### Catalogue, compliance and administration
+- HQ maintains approved SKUs/services, suitability criteria, product information, supplier/source links, prices with effective dates, service duration, installation pricing, geographic coverage, warranty/returns information and availability. Engineers cannot invent centrally approved prices or make binding promises outside their authority.
+- Where a recommendation is bespoke or depends on a site survey, create a **quote-review task** for HQ rather than auto-send a firm price.
+- Make accessibility central: clear language, large readable text, no required app installation; respect family/delegated access and never expose private household details in an unsecured link or WhatsApp preview.
+- Follow applicable UK electronic-marketing/privacy rules and documented customer preferences. Service messages and marketing follow-ups are distinct; the system must verify appropriate permission for each message and WhatsApp opt-in/template requirements where applicable. Allow easy opt-out.
+- Clearly disclose any material affiliate/referral or commission relationship and keep engineer incentives secondary to suitability and customer trust. Track complaints and inappropriate recommendations.
+- HQ sees suggested / approved / sent / viewed / booked / declined states, item-level profitability, booking outcomes and feedback. Sales AI can help draft accessible descriptions but must not invent product performance, pricing or customer consent.
+
+### Acceptance criteria
+- Engineer may add zero, one or several approved recommendations to a job; each is linked to the job and customer.
+- Customer receives only lawfully permitted messages through their chosen channel; failures are retried safely and logged without duplicates.
+- A recommendation displays benefits, limitations, separate product and installation costs, applicable fees, a transparent total and a no-obligation booking route.
+- Customer can accept or ignore without follow-up pressure, and can book at a later time from the secure link.
+- HQ can change catalogue entries and prices without code deployments; existing issued quotes retain their effective price/version history.
+- Booking triggers standard payment, availability, cancellation, engineer dispatch and financial reconciliation controls.
