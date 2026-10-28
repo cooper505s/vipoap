@@ -28,5 +28,6 @@ export async function onRequest({request,next}) {
   const page=url.pathname.replace(/\.html$/,'');
   if(page.startsWith('/admin')||['/app/account','/review','/additional-time'].includes(page)||url.searchParams.has('access')||url.searchParams.has('token'))headers.set('x-robots-tag','noindex, nofollow');
   if(url.pathname.startsWith('/api/'))headers.set('cache-control','no-store');
+  else if(url.pathname==='/admin'||url.pathname.startsWith('/admin/')||url.pathname==='/app'||url.pathname.startsWith('/app/')||url.pathname==='/assets/portal-navigation.js')headers.set('cache-control','no-cache');
   return secure(new Response(response.body,{status:response.status,statusText:response.statusText,headers}));
 }
