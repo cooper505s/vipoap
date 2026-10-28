@@ -56,6 +56,7 @@
       if(!can(document.body.dataset.pagePermission||'manage_operations')) {
         const main=document.querySelector('main');main.replaceChildren();const title=document.createElement('h1');title.textContent='Access restricted';const text=document.createElement('p');text.textContent='Your account does not have access to this workspace.';main.append(title,text);document.body.classList.add('workspace-ready');return;
       }
+      const applyPermissions=()=>document.querySelectorAll('[data-requires-permission]').forEach(element=>{element.hidden=!can(element.dataset.requiresPermission);});applyPermissions();new MutationObserver(applyPermissions).observe(document.body,{childList:true,subtree:true});
       let group='';for(const [section,label,href,permission,icon] of items) {
         if(!can(permission)||(['/admin/applications','/admin/callbacks'].includes(href)&&!data.territoryIds?.includes('*')))continue;
         if(section!==group){const heading=document.createElement('h2');heading.textContent=section;links.append(heading);group=section;}
