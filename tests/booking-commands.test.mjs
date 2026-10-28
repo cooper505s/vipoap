@@ -91,3 +91,42 @@ test('command path requires its migration while legacy commits still work withou
   await commitBookingChange(s.db,{bookingId:s.bookingId,expectedRevision:1,requestId:crypto.randomUUID(),snapshot:s.snapshot,events:[]});const before=s.saved().snapshot_json;
   await assert.rejects(s.command({expectedRevision:2}),{status:503});assert.equal(s.saved().snapshot_json,before);assert.equal(s.saved().revision,2);assert.equal(s.count('booking_mutations'),1);
 });
+
+
+test('assigned engineer progresses in order while preserving booking identity and charges',async()=>{
+  const s=await setup();let revision=1;
+  for(const [action,field] of [['accepted','acceptedAt'],['en-route','enRouteAt'],['arrived','arrivedAt'],['in-progress','startedAt']]){
+    const result=await s.command({kind:'engineer-job-transition',expectedRevision:revision,payload:{action}});assert.equal(result.revision,++revision);assert.equal(s.record().jobStatus,action);assert.equal(s.record()[field],'2026-10-28T17:00:00.000Z');
+    for(const key of ['customerId','operatorId','territoryId','reference','price','paymentStatus','bookingStatus','status'])assert.equal(s.record()[key],s.snapshot[key]);
+    assert.equal(s.record().assignedEngineerId,'engineer-one');assert.equal(s.count('booking_slot_reservations'),1);
+  }
+  assert.equal(s.count('booking_mutations'),4);assert.equal(s.count('booking_outbox'),4);assert.ok(s.sql.prepare('SELECT kind FROM booking_outbox').all().every(row=>row.kind==='engineer-job-progressed'));
+});
+
+test('engineer transition rejects skipped, reversed, unsupported and malformed actions',async()=>{
+  const s=await setup();for(const payload of [{action:'arrived'},{action:'en-route'},{action:'in-progress'}])await assert.rejects(s.command({kind:'engineer-job-transition',payload}),{status:409});
+  for(const payload of [{action:'completed'},{action:'declined'},{action:'accepted',operatorId:'other'},null])await assert.rejects(s.command({kind:'engineer-job-transition',payload}),{status:400});
+  await s.command({kind:'engineer-job-transition',payload:{action:'accepted'}});await assert.rejects(s.command({kind:'engineer-job-transition',expectedRevision:2,payload:{action:'accepted'}}),{status:409});assert.equal(s.count('booking_mutations'),1);
+});
+
+test('closed or refunded bookings cannot be progressed by an engineer',async()=>{
+  for(const patch of [{status:'cancelled'},{bookingStatus:'completed'},{jobStatus:'safety-stopped'},{status:'awaiting-final-settlement'},{paymentStatus:'refunded'},{paymentStatus:'refund-pending'},{jobStatus:'unresolved'}]){
+    const s=await setup();s.sql.prepare('UPDATE booking_transactions SET snapshot_json=? WHERE id=?').run(JSON.stringify({...s.snapshot,...patch}),s.bookingId);await assert.rejects(s.command({kind:'engineer-job-transition',payload:{action:'accepted'}}),{status:409});assert.equal(s.count('booking_mutations'),0);assert.equal(s.count('booking_outbox'),0);assert.equal(s.saved().revision,1);
+  }
+});
+
+test('engineer progress requires the assigned operator and consistent assignment aliases',async()=>{
+  const s=await setup();s.sessions.set(s.adminKey,{role:'owner',operatorId:'engineer-one',territoryIds:['*']});await assert.rejects(s.command({kind:'engineer-job-transition',payload:{action:'accepted'}}),{status:403});
+  s.sessions.set(s.adminKey,{role:'operator',operatorId:'engineer-one',territoryIds:['andover']});s.sql.prepare('UPDATE booking_transactions SET snapshot_json=? WHERE id=?').run(JSON.stringify({...s.snapshot,assignedEngineerId:'another-engineer'}),s.bookingId);await assert.rejects(s.command({kind:'engineer-job-transition',payload:{action:'accepted'}}),{status:404});assert.equal(s.count('booking_mutations'),0);
+});
+
+test('engineer progress retries reuse the original receipt after subsequent progress',async()=>{
+  const s=await setup(),requestId=crypto.randomUUID(),input={kind:'engineer-job-transition',requestId,payload:{action:'accepted'}};await s.command(input);await s.command({kind:'engineer-job-transition',expectedRevision:2,payload:{action:'en-route'}});
+  const replay=await s.command({...input,now:'2026-10-28T18:00:00Z'});assert.equal(replay.reused,true);assert.equal(replay.revision,2);assert.equal(s.record().jobStatus,'en-route');assert.equal(s.count('booking_mutations'),2);
+  await assert.rejects(s.command({...input,payload:{action:'arrived'}}),{status:409});
+});
+
+test('competing engineer progress commands commit once and event failure rolls back',async()=>{
+  const s=await setup(),input={kind:'engineer-job-transition',payload:{action:'accepted'}},results=await Promise.allSettled([s.command(input),s.command(input)]);assert.equal(results.filter(result=>result.status==='fulfilled').length,1);assert.equal(results.find(result=>result.status==='rejected').reason.status,409);assert.equal(s.count('booking_mutations'),1);
+  s.sql.exec("CREATE TRIGGER reject_progress BEFORE INSERT ON booking_outbox BEGIN SELECT RAISE(ABORT,'synthetic-progress-failure'); END;");await assert.rejects(s.command({kind:'engineer-job-transition',expectedRevision:2,payload:{action:'en-route'}}),/synthetic-progress-failure/);assert.equal(s.record().jobStatus,'accepted');assert.equal(s.saved().revision,2);assert.equal(s.count('booking_mutations'),1);assert.equal(s.count('booking_outbox'),1);
+});
