@@ -12,6 +12,8 @@ Callers must authenticate, authorize territory/ownership, enforce business state
 
 323 tests pass, including 12 real SQLite cases with foreign keys enabled: state/outbox atomicity, optimistic revisions, competing creates/updates, retry identity, changed-content rejection, overlapping/adjacent/different-engineer slots, reschedule rollback, explicit release, missing records and bounded inputs. The local adapter serializes SQL transactions as D1 does; these are not distributed load tests or proof of the Cloudflare deployment. D1 schema validation passes. Cloudflare documents transactional rollback for batch statements: https://developers.cloudflare.com/d1/worker-api/d1-database/#batch .
 
+Migration0011 was applied only to the isolated preview D1 database e7ac3c3a-9c55-4674-a2d0-ae28c6c23967. Four tables and two overlap triggers were verified. A clearly synthetic reservation for qa-engineer-preview-only at epoch milliseconds1000–2000 succeeded; a second reservation at1500–2500 was rejected with booking-slot-conflict. Only the first slot remains. Synthetic records qa-foundation-one-20261028 and possibly the failed request's parent qa-foundation-two-20261028 are preview fixtures, never real bookings. No outbox messages were created. This verifies D1 schema/trigger compatibility, not the module's actual Worker batch invocation or full workflow integration. Production schema remains unchanged.
+
 ## Required staged integration
 
 1. Inventory every booking, payment, assignment, dispatch, customer-change and administrative writer, including scheduled jobs and webhooks. Define allowed transitions and terminal-state behavior. Keep all prices/entitlements unchanged unless separately agreed.
