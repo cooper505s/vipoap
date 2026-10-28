@@ -18,3 +18,6 @@ export async function roleFor(env,id='viewer'){
 }
 export function hasPermission(context,permission){return Boolean(context&&(context.permissions?.includes('*')||context.permissions?.includes(permission)))}
 
+
+// A user manager cannot grant permissions they do not hold themselves.
+export function canGrantRole(context,role){const held=context?.permissions||[],requested=role?.permissions;if(!Array.isArray(requested))return false;return held.includes('*')||(!requested.includes('*')&&requested.every(permission=>held.includes(permission)));}
