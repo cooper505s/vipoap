@@ -1,4 +1,11 @@
 (()=>{
+  if(document.body.dataset.workspace==='admin'){
+    document.body.classList.add('software-workspace');
+    const main=document.querySelector('main');if(main)main.classList.add('workspace-main');
+    const css=document.createElement('link');css.rel='stylesheet';css.href='/admin/workspace.css?v=2';document.head.append(css);
+    const shell=document.createElement('script');shell.src='/admin/workspace.js?v=2';document.body.append(shell);
+    return;
+  }
   const icon=document.querySelector('link[rel~="icon"]')||document.createElement('link');
   icon.rel='icon';icon.type='image/png';icon.href='/assets/vipoap-os-icon-192.png?v=4';
   if(!icon.isConnected)document.head.append(icon);

@@ -36,21 +36,21 @@ export function validateApplication(body) {
 }
 
 // Bound streamed input even when a client omits or lies about Content-Length.
-export async function applicationBody(request) {
-  if(Number(request.headers.get('content-length')||0)>20000)throw Object.assign(Error('Please shorten your application.'),{status:413});
+export async function applicationBody(request,label='application') {
+  if(Number(request.headers.get('content-length')||0)>20000)throw Object.assign(Error(`Please shorten your ${label}.`),{status:413});
   const reader=request.body?.getReader();
-  if(!reader)throw Object.assign(Error('Please complete the application.'),{status:400});
+  if(!reader)throw Object.assign(Error(`Please complete the ${label}.`),{status:400});
   const chunks=[];let size=0;
   while(true) {
     const {done,value}=await reader.read();if(done)break;
     size+=value.byteLength;
-    if(size>20000){await reader.cancel();throw Object.assign(Error('Please shorten your application.'),{status:413});}
+    if(size>20000){await reader.cancel();throw Object.assign(Error(`Please shorten your ${label}.`),{status:413});}
     chunks.push(value);
   }
   const bytes=new Uint8Array(size);let offset=0;
   for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
   try { return JSON.parse(new TextDecoder().decode(bytes)); }
-  catch { throw Object.assign(Error('We could not read the application. Please try again.'),{status:400}); }
+  catch { throw Object.assign(Error(`We could not read the ${label}. Please try again.`),{status:400}); }
 }
 
 export async function notifyApplication(env,id) {

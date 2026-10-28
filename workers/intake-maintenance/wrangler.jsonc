@@ -1,0 +1,16 @@
+{
+  "name": "vipoap-intake-maintenance",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-01",
+  "triggers": {"crons": ["0 3 * * *"]},
+  "d1_databases": [{
+    "binding": "VIPOAP_DB",
+    "database_name": "vipoap-production",
+    "database_id": "2cb06f5b-4262-4a2e-aa2f-cf0e849dc394"
+  }],
+  "env": {"preview": {
+    "name": "vipoap-intake-maintenance-preview",
+    "triggers": {"crons": []},
+    "d1_databases": [{"binding":"VIPOAP_DB","database_name":"vipoap-rebuild-preview","database_id":"e7ac3c3a-9c55-4674-a2d0-ae28c6c23967"}]
+  }}
+}

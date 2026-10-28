@@ -1,4 +1,4 @@
-const PREVIEW_WRITES=new Set(['/api/engineer-applications','/api/admin/applications']);
+const PREVIEW_WRITES=new Set(['/api/engineer-applications','/api/admin/applications','/api/callbacks','/api/admin/callbacks']);
 // Pages _headers rules do not cover every Function response. Preserve the same
 // baseline explicitly when middleware wraps a static page or returns an API error.
 const SECURITY_HEADERS={
