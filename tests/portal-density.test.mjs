@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {staffNavigation,icons} from '../assets/portal-navigation.js';
+const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
+test('authenticated transition hides legacy sign-in before body parsing and releases after workspace readiness',()=>{for(const authenticated of [true,false]){const classes=new Set();let callback,ready=false;const context={sessionStorage:{getItem:()=>authenticated?'synthetic-session':null},document:{head:{append(){}},documentElement:{classList:{add:v=>classes.add(v),remove:v=>classes.delete(v),contains:v=>classes.has(v)}},body:{classList:{contains:()=>ready}},createElement:()=>({})},MutationObserver:class{constructor(fn){callback=fn}observe(){}disconnect(){}},setTimeout(){}};vm.runInNewContext(read('admin/workspace-bootstrap.js'),context);assert.equal(classes.has('workspace-pending'),authenticated);if(authenticated){ready=true;callback();assert.equal(classes.has('workspace-pending'),false)}}});
+test('every legacy workspace bootstraps before its login markup; login-only pages remain available',()=>{for(const file of fs.readdirSync(new URL('../admin',import.meta.url)).filter(name=>name.endsWith('.html'))){const html=read('admin/'+file);if(html.includes('mobile-nav.js')&&!html.includes('data-login-mode=')){assert.ok(html.indexOf('workspace-bootstrap.js?v=1')<html.indexOf('</head>'),file)}}assert.doesNotMatch(read('admin/hq.html'),/workspace-bootstrap/)});
+test('HQ destinations have distinct defined icons',()=>{const nav=staffNavigation({role:'owner',permissions:['*'],territoryIds:['*']});assert.equal(new Set(nav.map(item=>item.icon)).size,nav.length);for(const item of nav)assert.ok(icons[item.icon],item.label)});
