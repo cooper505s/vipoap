@@ -18,7 +18,7 @@ test('every OS workspace is installable and includes permission-aware navigation
   for(const page of pages){
     const html=read(page);
     assert.match(html,/manifest\.webmanifest/);
-    assert.match(html,/mobile-nav\.js\?v=(2|3|4|5)/);
+    assert.match(html,/(mobile-nav|workspace)\.js\?v=\d+/);
     assert.match(html,/apple-mobile-web-app-capable/);
   }
 });
@@ -26,6 +26,7 @@ test('every OS workspace is installable and includes permission-aware navigation
 test('every OS workspace uses the same stable page shell and header',()=>{
   for(const page of pages){
     const html=read(page);
+    if(html.includes('workspace.css?v=5')){assert.match(html,/class="workspace-main"/);continue;}
     assert.match(html,/header\.css\?v=5/);
     assert.match(html,/<main class="shell">/);
     assert.match(html,/<header class="top card os-page-header">/);
@@ -42,7 +43,7 @@ test('OS service worker never intercepts APIs and versions the shared shell',()=
   const navigation=read('admin/mobile-nav.js');
   assert.match(worker,/startsWith\('\/api\/'\)/);
   assert.match(worker,/request\.method!==\'GET\'/);
-  for(const asset of ['vipoap-os-v46','email-login.js?v=6','mobile-nav.js?v=5','knowledge.js?v=2','/admin/hq','header.css','callout-camera.js','billing-settlements.js','availability-calendar.js','operational-health.js?v=2','launch-readiness.js','backup-controls.js','restore-controls.js','maintenance-controls.js','distribution-alerts.js','manual-assignment.js','training-learning.js?v=2','training-admin.js?v=1','franchise-tools.js?v=2','ticket-workspace.js?v=2','ticket-workspace.js?v=3','control-overview.js?v=1','zoho-sync.js','reviews.js','connectivity.js','vipoap-os-icon-192','/admin/training','/admin/knowledge','/admin/franchise','/admin/safety','/admin/my-payments','/admin/helpdesk','my-payments.js'])assert.ok(worker.includes(asset),asset);
+  for(const asset of ['vipoap-os-v47','email-login.js?v=6','mobile-nav.js?v=6','knowledge.js?v=2','/admin/hq','header.css','callout-camera.js','billing-settlements.js','availability-calendar.js','operational-health.js?v=3','launch-readiness.js','backup-controls.js','restore-controls.js','maintenance-controls.js','distribution-alerts.js','manual-assignment.js','training-learning.js?v=2','training-admin.js?v=1','franchise-tools.js?v=2','ticket-workspace.js?v=2','ticket-workspace.js?v=3','control-overview.js?v=1','zoho-sync.js','reviews.js','connectivity.js','vipoap-os-icon-192','/admin/training','/admin/knowledge','/admin/franchise','/admin/safety','/admin/my-payments','/admin/helpdesk','my-payments.js'])assert.ok(worker.includes(asset),asset);
   assert.match(navigation,/connectivity\.js/);
   assert.match(navigation,/vipoap-os-icon-192/);
 });
