@@ -100,11 +100,6 @@
     });
   }
 
-  var cbStatus = document.getElementById('cbStatus');
-  if (cbStatus && new URLSearchParams(window.location.search).get('callback') === 'sent') {
-    cbStatus.textContent = 'Thank you. Your callback request has been sent to our team.';
-    cbStatus.className = 'booking-status ok';
-  }
 
 }());
 
