@@ -36,7 +36,7 @@
       }
       if(!data.ok||!data.reference)throw Error('We could not confirm receipt. Please try again using the same details.');
       accepted=true;
-      message(`Thank you. Your application has been saved. Your reference is ${data.reference}. We will contact you to discuss the next steps. This is not approval to carry out work.`,true);
+      message(`Application saved. Reference: ${data.reference}. We'll be in touch. Approval is required before taking work.`,true);
       button.textContent='Application saved';
       for(const name of fields){const field=form.elements.namedItem(name);field.readOnly=true;if(field.tagName==='SELECT')field.disabled=true;}
     } catch(error) {
