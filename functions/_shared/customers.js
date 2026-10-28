@@ -1,7 +1,26 @@
 function clean(value,max=500){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
 export function normalisePhone(value){let phone=clean(value,40).replace(/\D/g,'');if(phone.startsWith('44'))phone=`0${phone.slice(2)}`;return phone}
 async function emailIndex(value){const email=clean(value,150).toLowerCase();if(!email)return'';const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(email));return`customer-email:${[...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('')}`}
-export async function findCustomer(env,input){if(!env.VIPOAP_DATA)return null;const phoneKey=normalisePhone(input.phone),email=clean(input.email,150),emailKey=await emailIndex(email);let key=phoneKey?await env.VIPOAP_DATA.get(`customer-phone:${phoneKey}`):emailKey?await env.VIPOAP_DATA.get(emailKey):'';if(key){const customer=await env.VIPOAP_DATA.get(key,'json');if(customer)return{key,...customer}}const keys=await env.VIPOAP_DATA.list({prefix:'customer:'});for(const item of keys.keys){const customer=await env.VIPOAP_DATA.get(item.name,'json');if(customer&&((phoneKey&&normalisePhone(customer.phone)===phoneKey)||(email&&String(customer.email||'').toLowerCase()===email.toLowerCase())))return{key:item.name,...customer}}return null}
+export async function findCustomer(env,input){
+  if(!env.VIPOAP_DATA)return null;
+  const phoneKey=normalisePhone(input.phone),email=clean(input.email,150).toLowerCase(),emailKey=await emailIndex(email);
+  if(!phoneKey&&!email)return null;
+  const matches=customer=>customer&&((phoneKey&&normalisePhone(customer.phone)===phoneKey)||(email&&String(customer.email||'').trim().toLowerCase()===email));
+  for(const index of [phoneKey?`customer-phone:${phoneKey}`:'',emailKey].filter(Boolean)){
+    const key=await env.VIPOAP_DATA.get(index);
+    if(typeof key!=='string'||!key.startsWith('customer:'))continue;
+    const customer=await env.VIPOAP_DATA.get(key,'json');
+    // Indexes can lag after contact edits. Verify the current contact before linking.
+    if(matches(customer))return{...customer,key};
+  }
+  let cursor;
+  do{
+    const page=await env.VIPOAP_DATA.list({prefix:'customer:',...(cursor?{cursor}:{})});
+    for(const item of page.keys){const customer=await env.VIPOAP_DATA.get(item.name,'json');if(matches(customer))return{...customer,key:item.name};}
+    cursor=page.list_complete===false?page.cursor:null;
+  }while(cursor);
+  return null;
+}
 export async function ensureCustomer(env,input){
   if(!env.VIPOAP_DATA)return null;
   const phone=clean(input.phone,40),phoneKey=normalisePhone(phone),email=clean(input.email,150),emailKey=await emailIndex(email);if(!phoneKey&&!emailKey)return null;
