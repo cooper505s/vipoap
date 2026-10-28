@@ -11,6 +11,9 @@ export async function retainIntake(env,scheduledTime=Date.now()) {
   ]);
 }
 export default {
-  async scheduled(event,env) {await retainIntake(env,event.scheduledTime);},
+  async scheduled(event,env) {
+    const hour=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',hourCycle:'h23'}).format(new Date(event.scheduledTime));
+    if(hour==='03')await retainIntake(env,event.scheduledTime);
+  },
   async fetch(){return new Response('Not found',{status:404});}
 };

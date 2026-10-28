@@ -2,7 +2,7 @@
   "name": "vipoap-intake-maintenance",
   "main": "src/index.js",
   "compatibility_date": "2026-08-01",
-  "triggers": {"crons": ["0 3 * * *"]},
+  "triggers": {"crons": ["0 2,3 * * *"]},
   "d1_databases": [{
     "binding": "VIPOAP_DB",
     "database_name": "vipoap-production",
