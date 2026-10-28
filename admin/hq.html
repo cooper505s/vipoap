@@ -20,7 +20,7 @@
 </main>
 <script>
 const form=document.getElementById('adminLoginForm'),password=document.getElementById('adminPassword'),button=document.getElementById('adminLoginButton'),status=document.getElementById('adminLoginStatus');
-form.addEventListener('submit',async event=>{event.preventDefault();button.disabled=true;status.textContent='Signing in…';try{const response=await fetch('/api/admin/session',{headers:{'x-admin-password':password.value}}),data=await response.json();if(!response.ok||!['owner','admin'].includes(data.role))throw Error(data.error||'Administrator access was not recognised.');sessionStorage.setItem('vipoapAdmin',password.value);sessionStorage.removeItem('vipoapAdminSession');location.replace('/admin/os')}catch(error){status.textContent=error.message}finally{button.disabled=false}});
+form.addEventListener('submit',async event=>{event.preventDefault();button.disabled=true;status.textContent='Signing in…';try{const response=await fetch('/api/admin/session',{headers:{'x-admin-password':password.value}}),data=await response.json();if(!response.ok||!['owner','admin'].includes(data.role))throw Error(data.error||'Administrator access was not recognised.');sessionStorage.setItem('vipoapAdmin',password.value);sessionStorage.removeItem('vipoapAdminSession');location.replace('/admin/control')}catch(error){status.textContent=error.message}finally{button.disabled=false}});
 </script>
 </body>
 </html>
