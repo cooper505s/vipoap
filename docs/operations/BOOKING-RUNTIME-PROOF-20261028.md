@@ -20,3 +20,11 @@ The UI-deployed bundle combines the unchanged storage primitive and runner. Its 
 This proves actual Worker invocation of D1 batches for the tested cases, rather than only local SQLite or console SQL. It is a bounded synthetic run, not a distributed load test, business-policy review, authenticated customer journey or production concurrency guarantee. Outbox provider delivery, all-writer adapters, provider-event/checkout intent coordination, complete export/import reconciliation and post-cutover recovery remain required. The draft stays inactive and production KV remains authoritative.
 
 Future manual proof runs generate new synthetic prefixes. Do not attach this test Worker to production storage, add a public trigger or enable a recurring cron. Before any real delivery consumer is introduced in preview, explicitly separate or dispose of these synthetic outbox fixtures; an unknown event kind must not reach a provider.
+
+## Command adapter proof prepared — not yet run on Cloudflare
+
+The separate `workers/booking-command-proof` runner exercises the actual authenticated command adapter against synthetic sessions and preview-only storage. HTTP always returns 404; there is no cron or provider binding. It requires the existing preview fixture marker and migration 0013 before creating its own uniquely named fixtures.
+
+Thirteen checks cover identical concurrent commands, changed-request conflicts, engineer and customer ownership, pending appointment requests, failed-outbox rollback, competing revisions, replay after later changes, immutable booking fields and atomic command metadata. The runner releases its synthetic reservation on successful completion. Its internal outbox events are test fixtures and must never reach a delivery provider.
+
+Migration 0013 was visibly verified in the preview D1 console. The command runner passes local SQLite tests, but has **not been deployed or executed on Cloudflare**. The earlier twelve-check primitive proof above does not prove this newer command path. The Cloudflare editor was unavailable during preparation; a real manual invocation and independent D1 result verification remain release gates. Production bindings and live routes remain unchanged.

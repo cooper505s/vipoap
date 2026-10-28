@@ -1,0 +1,8 @@
+{
+  "name": "vipoap-booking-command-proof",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "triggers": {"crons": []},
+  "d1_databases": [{"binding":"VIPOAP_TEST_DB","database_name":"vipoap-rebuild-preview","database_id":"e7ac3c3a-9c55-4674-a2d0-ae28c6c23967"}]
+}
