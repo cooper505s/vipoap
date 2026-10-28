@@ -17,3 +17,10 @@ Staff and ticket ownership use the existing KV store with separate staff: direct
 
 
 Settings groups people/access, business setup, communications and system/recovery. Existing user/role/territory/brand/recovery controls are linked to their authorised editors. Channel configuration is reported as booleans without exposing credentials. The template library stores append-only draft records; drafts never replace live messages or send email. Live notification delivery settings and scheduled routines remain deployment-managed; a routine editor, quiet hours/digests and live template activation are not implemented and are labelled accordingly. New API writes are staff records, reversible status changes and inactive template drafts only when an authorised user submits the relevant form.
+
+
+## Compact navigation and density
+
+HQ navigation presents Overview and six expandable groups rather than every child link at once. Group state is saved per role and is not selected by the current page, so navigation does not automatically change shape during page transitions. The authorised destination list is unchanged; a group containing the current page is highlighted even when closed. Native disclosure controls work with keyboard input, including in the icon-only sidebar. Mobile keeps larger targets and the existing off-canvas menu/focus handling.
+
+Staff and customer workspace chrome, cards, filters, directory rows and tables use tighter spacing. Intake directories no longer reserve the old two-pane editor minimum height when they contain few records. The public website remains unchanged. Desktop and a 390-pixel mobile breakpoint were reviewed using synthetic local fixtures only.
