@@ -1,5 +1,6 @@
 import {adminContext,canAccessTerritory} from '../../_shared/admin-auth.js';
 import {hasPermission} from '../../_shared/permissions.js';
+import {operatorCanReceiveWork} from '../../_shared/compliance.js';
 function clean(value,max=1000){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 async function sendConfirmation(env,booking){
@@ -13,13 +14,30 @@ async function sendConfirmation(env,booking){
 function canUse(context,booking){return canAccessTerritory(context,booking.territoryId||'andover')&&(context.role!=='operator'||(booking.operatorId||booking.assignedEngineerId)===context.operatorId)}
 const DAY_NAMES=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 function toMinutes(time){const [hours,minutes]=String(time||'00:00').split(':').map(Number);return hours*60+minutes}
-async function replacementEngineer(env,booking,bookingKey,excluded){const service=booking.supportType==='Remote support'?'remote':'home',chosen=new Date(`${booking.date}T12:00:00Z`),start=toMinutes(booking.time),end=start+Number(booking.duration||30),availabilityKeys=await env.VIPOAP_DATA.list({prefix:'availability:'}),records=(await Promise.all(availabilityKeys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(record=>(record?.territoryId||'andover')===(booking.territoryId||'andover')&&record.operatorId&&record.operatorId!==excluded),candidates=[];for(const record of records){const operator=await env.VIPOAP_DATA.get(`operator:${record.operatorId}`,'json'),services=Array.isArray(operator?.serviceTypes)?operator.serviceTypes:['home','remote'],override=record.overrides?.find(item=>item.date===booking.date);if(!services.includes(service)||((record.blockedDates?.includes(booking.date)||override?.status==='blocked')&&override?.status!=='available'))continue;const weekly=booking.supportType==='Remote support'?record.remoteWeekly:record.homeVisitWeekly,ranges=weekly?.[DAY_NAMES[chosen.getUTCDay()]]||[];if(ranges.some(([from,to])=>start>=toMinutes(from)&&end<=toMinutes(to)))candidates.push(record.operatorId)}const bookingKeys=await env.VIPOAP_DATA.list({prefix:`booking:${booking.date}:`}),bookings=(await Promise.all(bookingKeys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(Boolean),free=candidates.filter(operatorId=>!bookings.some(item=>item.key!==bookingKey&&(item.operatorId||item.assignedEngineerId)===operatorId&&!['declined','cancelled'].includes(item.status)&&start<toMinutes(item.time)+Number(item.duration||30)&&end>toMinutes(item.time))).sort((a,b)=>bookings.filter(item=>(item.operatorId||item.assignedEngineerId)===a).length-bookings.filter(item=>(item.operatorId||item.assignedEngineerId)===b).length||a.localeCompare(b));return free[0]||''}
+async function allKeys(kv,prefix){
+  const keys=[];let cursor;
+  do{const page=await kv.list({prefix,...(cursor?{cursor}:{})});keys.push(...page.keys);cursor=page.list_complete===false?page.cursor:null;}while(cursor);
+  return{keys};
+}
+async function replacementEngineer(env,booking,bookingKey,excluded){
+  const territory=booking.territoryId||'andover',service=booking.supportType==='Remote support'?'remote':'home',chosen=new Date(`${booking.date}T12:00:00Z`),start=toMinutes(booking.time),end=start+Number(booking.duration||30);
+  const availabilityKeys=await allKeys(env.VIPOAP_DATA,'availability:'),records=(await Promise.all(availabilityKeys.keys.map(key=>env.VIPOAP_DATA.get(key.name,'json')))).filter(record=>(record?.territoryId||'andover')===territory&&record.operatorId&&record.operatorId!==excluded),candidates=[];
+  for(const record of records){
+    const operator=await env.VIPOAP_DATA.get(`operator:${record.operatorId}`,'json'),services=Array.isArray(operator?.serviceTypes)?operator.serviceTypes:['home','remote'],override=record.overrides?.find(item=>item.date===booking.date);
+    if(!operator?.id||!(operator.territoryIds||[]).includes(territory)||!operatorCanReceiveWork(operator,new Date(),service)||!services.includes(service)||record.blockedDates?.includes(booking.date)||override?.status==='blocked')continue;
+    const weekly=booking.supportType==='Remote support'?record.remoteWeekly:record.homeVisitWeekly,ranges=weekly?.[DAY_NAMES[chosen.getUTCDay()]]||[];
+    if(ranges.some(([from,to])=>start>=toMinutes(from)&&end<=toMinutes(to)))candidates.push(record.operatorId);
+  }
+  const bookingKeys=await allKeys(env.VIPOAP_DATA,`booking:${booking.date}:`),bookings=(await Promise.all(bookingKeys.keys.map(async key=>({key:key.name,record:await env.VIPOAP_DATA.get(key.name,'json')})))).filter(item=>item.record&&item.key!==bookingKey).map(item=>item.record);
+  const free=candidates.filter(operatorId=>!bookings.some(item=>(item.operatorId||item.assignedEngineerId)===operatorId&&!['declined','cancelled'].includes(item.status)&&!['declined','cancelled'].includes(item.bookingStatus)&&start<toMinutes(item.time)+Number(item.duration||30)&&end>toMinutes(item.time))).sort((a,b)=>bookings.filter(item=>(item.operatorId||item.assignedEngineerId)===a).length-bookings.filter(item=>(item.operatorId||item.assignedEngineerId)===b).length||a.localeCompare(b));
+  return free[0]||'';
+}
 async function sendReassignment(env,booking,operatorId){if(booking.paymentStatus!=='prepaid'||!env.RESEND_API_KEY||!env.BOOKING_FROM_EMAIL)return false;const operator=await env.VIPOAP_DATA.get(`operator:${operatorId}`,'json');if(!operator?.email)return false;const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${env.RESEND_API_KEY}`,'content-type':'application/json','idempotency-key':`${booking.reference}-reassigned-${operatorId}`},body:JSON.stringify({from:env.BOOKING_FROM_EMAIL,to:[operator.email],subject:`Paid booking reassigned to you — ${booking.reference}`,html:`<h2>VIPOAP booking reassigned</h2><p>Hello ${escapeHtml(operator.name)},</p><p>This paid booking now matches your availability and is ready to review in My Area.</p><p><strong>${escapeHtml(booking.reference)}</strong><br>${escapeHtml(booking.supportType)} · ${escapeHtml(booking.date)} at ${escapeHtml(booking.time)}<br>${escapeHtml(booking.service)}</p>`})});return response.ok}
 
 export async function onRequestGet({request,env}){
   const context=await adminContext(request,env);if(!hasPermission(context,'manage_calls'))return Response.json({error:'Unauthorised'},{status:401});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
-  const keys=await env.VIPOAP_DATA.list({prefix:'booking:'});
+  const keys=await allKeys(env.VIPOAP_DATA,'booking:');
   const bookings=(await Promise.all(keys.keys.map(async key=>({key:key.name,...await env.VIPOAP_DATA.get(key.name,'json')})))).filter(x=>x.reference&&canUse(context,x)).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
   return Response.json({bookings});
 }
@@ -27,9 +45,12 @@ export async function onRequestGet({request,env}){
 export async function onRequestPatch({request,env}){
   const context=await adminContext(request,env);if(!hasPermission(context,'manage_calls'))return Response.json({error:'Unauthorised'},{status:401});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
-  const body=await request.json(); const key=clean(body.key,200); const status=clean(body.status,20); const adminNotes=clean(body.adminNotes,1500);const cancellationReason=clean(body.cancellationReason,500);const cancellationWaived=Boolean(body.cancellationWaived);const cancellationCharge=status==='cancelled'&&!cancellationWaived?Math.max(0,Math.min(15,Number(body.cancellationCharge)||0)):0;
+  let body;try{body=await request.json()}catch{return Response.json({error:'Invalid update.'},{status:400})}
+  if(!body||typeof body!=='object'||Array.isArray(body))return Response.json({error:'Invalid update.'},{status:400});
+  const key=clean(body.key,200); const status=clean(body.status,20); const adminNotes=clean(body.adminNotes,1500);const cancellationReason=clean(body.cancellationReason,500);const cancellationWaived=Boolean(body.cancellationWaived);const cancellationCharge=status==='cancelled'&&!cancellationWaived?Math.max(0,Math.min(15,Number(body.cancellationCharge)||0)):0;
   if(!key.startsWith('booking:')||!['pending','confirmed','declined','completed','cancelled'].includes(status))return Response.json({error:'Invalid update.'},{status:400});
   const booking=await env.VIPOAP_DATA.get(key,'json'); if(!booking||!canUse(context,booking))return Response.json({error:'Booking not found.'},{status:404});
+  if(context.role==='operator'&&status==='declined'&&([booking.status,booking.bookingStatus,booking.jobStatus].some(state=>['completed','cancelled','declined','in-progress','safety-stopped','awaiting-final-settlement','partially-resolved','unresolved','follow-up-booked'].includes(state))||booking.paymentStatus==='refunded'))return Response.json({error:'This job can no longer be declined. Please contact VIPOAP.'},{status:409});
   if(context.role==='operator'&&status==='declined'){const now=new Date().toISOString(),replacement=await replacementEngineer(env,{...booking,key},key,context.operatorId),history=[...(booking.assignmentHistory||[]),{operatorId:context.operatorId,action:'declined',at:now,reason:adminNotes}];let notified=false;if(replacement)try{notified=await sendReassignment(env,booking,replacement)}catch{}const updated={...booking,operatorId:replacement,assignedEngineerId:'',status:'pending',bookingStatus:replacement?'requested':'unfilled',assignmentHistory:replacement?[...history,{operatorId:replacement,action:'reassigned',at:now}]:history,assignmentNotificationSent:notified,unfilledAt:replacement?'':now,updatedAt:now};await env.VIPOAP_DATA.put(key,JSON.stringify(updated));return Response.json({ok:true,reassignedTo:replacement||null,unfilled:!replacement})}
   if(status==='confirmed'&&booking.status!=='confirmed'&&booking.paymentStatus!=='prepaid')return Response.json({error:'Advance payment must be completed before this appointment can be confirmed.'},{status:409});
   let confirmationEmailSentAt=booking.confirmationEmailSentAt;
