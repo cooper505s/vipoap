@@ -42,7 +42,7 @@ window.vipoapWorkspaceReady=(async () => {
   let installPrompt=null;const installButton=bar.querySelector('#workspaceInstall');
   window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();installPrompt=event;installButton.hidden=false;});
   installButton.onclick=async()=>{if(!installPrompt)return;await installPrompt.prompt();installPrompt=null;installButton.hidden=true;};
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('/admin/service-worker.js',{scope:'/admin/'}).catch(()=>{});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('/admin/service-worker.js',{scope:'/admin/',updateViaCache:'none'}).catch(()=>{});
   async function initialise() {
     if(!headers()['x-admin-password']&&!headers()['x-admin-session']){location.replace(signIn);return;}
     try {

@@ -9,3 +9,13 @@
 /api/*
   Cache-Control: no-store
   X-Content-Type-Options: nosniff
+
+# Portal code and styles must revalidate when a user refreshes or navigates.
+/admin/*
+  Cache-Control: no-cache
+
+/app/*
+  Cache-Control: no-cache
+
+/assets/portal-navigation.js
+  Cache-Control: no-cache
