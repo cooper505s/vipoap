@@ -1,3 +1,4 @@
+import {groupNavigation} from '../admin/navigation-groups.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {staffNavigation,customerNavigation,routePath} from '../assets/portal-navigation.js';
@@ -16,3 +17,6 @@ test('menu respects delegated permissions and global-only intake scope',()=>{
 test('customer navigation contains only customer panels and canonical staff paths remain active',()=>{
  assert.deepEqual(customerNavigation.map(i=>i[0]),['overview','appointments','invoices','membership','family','home','help','settings']);for(const path of ['/admin/','/admin/index.html','/admin'])assert.equal(routePath(path),'/admin');assert.equal(routePath('/admin/os.html#serviceStatus'),'/admin/os');
 });
+
+test('compact groups retain every authorised destination in its existing order',()=>{for(const role of ['owner','admin','operator','viewer']){const items=staffNavigation(session(role)),groups=groupNavigation(items);assert.deepEqual(groups.flatMap(group=>group.items),items);assert.equal(new Set(groups.map(group=>group.section)).size,groups.length);if(role==='owner'){assert.equal(groups.length,7);assert.ok(items.length>groups.length*2)}}});
+test('grouping an empty permission-filtered menu does not introduce destinations',()=>assert.deepEqual(groupNavigation([]),[]));

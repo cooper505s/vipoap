@@ -32,7 +32,7 @@ window.vipoapWorkspaceReady=(async () => {
   mobile.addEventListener('change',close);visibility();
   nav.addEventListener('keydown',event=>{
     if(event.key!=='Tab'||!mobile.matches||!nav.classList.contains('is-open'))return;
-    const focusable=[...nav.querySelectorAll('a[href],button')].filter(element=>element.getClientRects().length),first=focusable[0],last=focusable.at(-1);
+    const focusable=[...nav.querySelectorAll('a[href],button,summary')].filter(element=>element.getClientRects().length),first=focusable[0],last=focusable.at(-1);
     if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
     else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
   });
@@ -53,11 +53,8 @@ window.vipoapWorkspaceReady=(async () => {
       brand.href=engineer?'/admin/':'/admin/control';brand.querySelector('small').textContent=engineer?'Partner workspace':'HQ workspace';
       bar.querySelector('.workspace-context strong').textContent=engineer?'Partner workspace':'HQ workspace';bar.querySelector('.workspace-context small').textContent=' / '+(document.querySelector('main .os-page-heading h1,main .page-heading h1,main>header h1')?.textContent||document.title.split('|')[0]);
       const applyPermissions=()=>document.querySelectorAll('[data-requires-permission]').forEach(element=>{element.hidden=!can(element.dataset.requiresPermission);});applyPermissions();new MutationObserver(applyPermissions).observe(document.body,{childList:true,subtree:true});
-      let group='';for(const {section,label,href,icon} of staffNavigation(data)) {
-        if(section!==group){const heading=document.createElement('h2');heading.textContent=section;links.append(heading);group=section;}
-        const link=document.createElement('a');link.href=href;link.className='nav-link';link.title=label;link.setAttribute('aria-label',label);link.innerHTML=iconSvg(icon)+`<span>${label}</span>`;
-        if(routePath(path)===href)link.setAttribute('aria-current','page');links.append(link);
-      }
+      const {mountNavigation}=await import('/admin/navigation-groups.js?v=1');
+      mountNavigation({container:links,items:staffNavigation(data),path:routePath(path),role:data.role,iconSvg});
       try{links.scrollTop=Number(sessionStorage.getItem('vipoapNavScroll:'+data.role))||0}catch{}
       links.addEventListener('scroll',()=>{try{sessionStorage.setItem('vipoapNavScroll:'+data.role,String(links.scrollTop))}catch{}},{passive:true});
       bar.querySelector('.workspace-role').textContent=data.role==='owner'?'Owner':data.role==='operator'?'Engineer Partner':'Administrator';
