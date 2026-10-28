@@ -1,9 +1,9 @@
-const CACHE='vipoap-app-v25';
-const ASSETS=['/assets/vipoap-os-heart-blue.png','/assets/portal-navigation.js?v=1','/app/account-navigation.js?v=1','/app/','/app/index.html','/app/account','/app/account.css?v=2','/app/account-family.css?v=1','/app/account.js?v=4','/app/guided-help.js','/app/booking-payment.js?v=2','/app/booking-help.js','/app/payment-checkout.js?v=2','/app/stripe-embedded.js?v=1','/app/account-link.js','/app/account-help.js','/app/account-home.js','/app/account-profile.js','/app/account-health.js','/app/preferred-engineer.js','/app/account-ask.js','/app/manifest.webmanifest','/assets/connectivity.js','/assets/fonts.css','/assets/fonts/quicksand-latin.woff2','/assets/vipoap-heart-transparent.png','/assets/favicon-32.png','/assets/icon-192.png?v=3','/assets/icon-512.png?v=3'];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
+const CACHE='vipoap-app-v26';
+const ASSETS=['/assets/vipoap-os-heart-blue.png','/assets/portal-navigation.js?v=1','/app/account-navigation.js?v=1','/app/','/app/index.html','/app/account','/app/account.css?v=3','/app/account-family.css?v=1','/app/account.js?v=4','/app/guided-help.js','/app/booking-payment.js?v=2','/app/booking-help.js','/app/payment-checkout.js?v=2','/app/stripe-embedded.js?v=1','/app/account-link.js','/app/account-help.js','/app/account-home.js','/app/account-profile.js','/app/account-health.js','/app/preferred-engineer.js','/app/account-ask.js','/app/manifest.webmanifest','/assets/connectivity.js','/assets/fonts.css','/assets/fonts/quicksand-latin.woff2','/assets/vipoap-heart-transparent.png','/assets/favicon-32.png','/assets/icon-192.png?v=3','/assets/icon-512.png?v=3'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('vipoap-app-')&&k!==CACHE).map(k=>caches.delete(k))))));
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   if(new URL(event.request.url).pathname.startsWith('/api/'))return;
-  event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response}).catch(()=>caches.match(event.request).then(r=>r||caches.match('/app/'))));
+  event.respondWith(fetch(event.request,{cache:'no-cache'}).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response}).catch(()=>caches.match(event.request).then(r=>r||caches.match('/app/'))));
 });
