@@ -1,6 +1,6 @@
 # Booking mutation inventory and cutover scope
 
-Audited source: draft transaction foundation based on 19f484c, with live safeguards through PR79 tracked separately. This is a source inventory, not proof that the deployed scheduled Worker matches the repository or that every dynamic KV key is classified. Re-run a repository-wide write scan before freezing a release.
+Audited source: transaction foundation incorporating main d076b38 through PR80. This is a source inventory, not proof that the deployed scheduled Worker matches the repository or that every dynamic KV key is classified. Re-run a repository-wide write scan before freezing a release.
 
 ## Booking snapshot writers
 
@@ -15,7 +15,7 @@ Audited source: draft transaction foundation based on 19f484c, with live safegua
 | `functions/api/payments/checkout.js` | Expired hold cancellation, checkout/payment references, payment ledger | Stable provider checkout intent before API call; reconcile success before response failure; terminal guards and slot release |
 | `functions/api/payments/webhook.js` | Service/additional payment state, refund state, hold expiry, dispatch and help association; event receipt | Provider inbox receipt, booking/ledger transition, outbox in one commit; replay and out-of-order policies; distinguish partial refund |
 | `functions/api/admin/additional-settlements.js` | Recreated/resend settlement reference and status via final-settlement helper | Durable checkout intent, read current amount, avoid duplicate charge/notification |
-| `functions/api/admin/incidents.js` | Stop-work status/payment review and incident link | Validate job ownership/territory before stop; atomic incident link, invalidate further service/payment mutations; safety slots require explicit policy |
+| `functions/api/admin/incidents.js` | Stop-work status/payment review and incident link | PR80 validates job ownership/territory and stops all progress fields; atomic incident link and safety-slot policy still required |
 | `functions/api/admin/my-payments.js` | Manual provider-paid status/reference on booking or callout | Preserve payout facts with revision check; authorise billing/territory |
 | `functions/api/admin/stripe-payouts.js` | Provider-paid/Stripe transfer facts on booking or callout | Stable transfer intent and provider reconciliation; no actual transfers in tests |
 | `functions/_shared/reviews.js` | Review key/invitation timestamp on snapshot, review/access records, email | Avoid stale full-snapshot overwrite; atomic invitation intent and token creation |
