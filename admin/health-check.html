@@ -15,7 +15,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f7f3ec;color:#102957;font-family:Quicksand,"Segoe UI",sans-serif}.shell{max-width:1180px;margin:auto;padding:18px}.card{background:#fff;border:1px solid #cbd9ea;border-radius:16px;padding:18px;margin-bottom:14px}.top,.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.top img{width:55px}.assessment-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.assessment-area{border:1px solid #d7e1ee;border-radius:14px;padding:14px;background:#fbfdff}.field{margin:12px 0}label{font-weight:800;display:block;margin-bottom:6px}label small{display:block;margin-top:4px;color:#667085;font-weight:600;line-height:1.35}select,textarea{width:100%;padding:10px;border:1px solid #aebed0;border-radius:9px;font:inherit}textarea{min-height:76px;resize:vertical}.area-note{margin-top:9px;min-height:58px}.btn{border:0;border-radius:9px;padding:10px 13px;background:#102957;color:#fff;font:inherit;font-weight:800;cursor:pointer}.score{font-size:2rem;font-weight:800}.muted{color:#667085}.item{border-top:1px solid #cbd9ea;padding:14px 0}.item:first-child{border-top:0}.breakdown{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 12px;margin:10px 0}.breakdown span{display:flex;justify-content:space-between;gap:10px;padding:7px 9px;border-radius:8px;background:#eef4fb}.status{font-weight:800;min-height:22px}.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.assessment-grid,.summary-grid,.breakdown{grid-template-columns:1fr}}
 </style>
-</head>
+<script src="/admin/workspace-bootstrap.js?v=1"></script></head>
 <body data-page-permission="manage_customers" data-workspace="admin">
 <main class="shell">
 <header class="top card os-page-header"><a class="os-brand" href="/admin/" aria-label="VIPOAP OS home"><img src="../assets/vipoap-os-heart-blue.png" alt=""><div><h1>VIPOAP OS</h1><p class="muted">Administration portal</p></div></a><div class="os-header-controls"><span class="os-portal-badge">Secure workspace</span><span class="os-install-slot" aria-live="polite"></span></div></header>
@@ -47,6 +47,6 @@ $('healthForm').onsubmit=async event=>{event.preventDefault();const answers=Obje
 load().catch(error=>$('status').textContent=error.message);
 </script>
 <script src="email-login.js?v=6"></script>
-<script src="mobile-nav.js?v=7"></script>
+<script src="mobile-nav.js?v=8"></script>
 </body>
 </html>

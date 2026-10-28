@@ -1,7 +1,7 @@
 window.vipoapWorkspaceReady=(async () => {
   const favicon=document.querySelector('link[rel~="icon"]')||document.createElement('link');favicon.rel='icon';favicon.type='image/png';favicon.href='/assets/vipoap-os-icon-192.png?v=4';if(!favicon.isConnected)document.head.append(favicon);
   const headers=()=>({'x-admin-password':sessionStorage.getItem('vipoapAdmin')||'','x-admin-session':sessionStorage.getItem('vipoapAdminSession')||''});
-  const {staffNavigation,iconSvg,routePath}=await import('/assets/portal-navigation.js?v=1');
+  const {staffNavigation,iconSvg,routePath}=await import('/assets/portal-navigation.js?v=2');
   let engineer=false;
   let signIn=document.body.dataset.workspace==='engineer'?'/admin/':'/admin/hq';
   const path=location.pathname.replace(/\.html$/,'').replace(/\/$/,'').replace(/^\/admin\/index$/,'/admin');
@@ -53,7 +53,7 @@ window.vipoapWorkspaceReady=(async () => {
       brand.href=engineer?'/admin/':'/admin/control';brand.querySelector('small').textContent=engineer?'Partner workspace':'HQ workspace';
       bar.querySelector('.workspace-context strong').textContent=engineer?'Partner workspace':'HQ workspace';bar.querySelector('.workspace-context small').textContent=' / '+(document.querySelector('main .os-page-heading h1,main .page-heading h1,main>header h1')?.textContent||document.title.split('|')[0]);
       const applyPermissions=()=>document.querySelectorAll('[data-requires-permission]').forEach(element=>{element.hidden=!can(element.dataset.requiresPermission);});applyPermissions();new MutationObserver(applyPermissions).observe(document.body,{childList:true,subtree:true});
-      const {mountNavigation}=await import('/admin/navigation-groups.js?v=1');
+      const {mountNavigation}=await import('/admin/navigation-groups.js?v=2');
       mountNavigation({container:links,items:staffNavigation(data),path:routePath(path),role:data.role,iconSvg});
       try{links.scrollTop=Number(sessionStorage.getItem('vipoapNavScroll:'+data.role))||0}catch{}
       links.addEventListener('scroll',()=>{try{sessionStorage.setItem('vipoapNavScroll:'+data.role,String(links.scrollTop))}catch{}},{passive:true});
