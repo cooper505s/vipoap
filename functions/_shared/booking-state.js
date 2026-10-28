@@ -11,3 +11,9 @@ export function validPaymentMethod(supportType,method){
   return supportType==='Home visit'?['online','cash'].includes(method):['online','membership'].includes(method);
 }
 
+
+export function canAddAdditionalTime(booking){
+  return booking?.jobStatus==='in-progress'
+    && ![booking.status,booking.bookingStatus].some(state=>['cancelled','declined','completed','safety-stopped','awaiting-final-settlement'].includes(state))
+    && !['refunded','refund-pending'].includes(booking.paymentStatus);
+}
