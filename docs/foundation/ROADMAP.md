@@ -127,3 +127,10 @@ A release is ready only when:
 - failure states are understandable;
 - support and rollback steps exist;
 - the feature passes the Kitchen Table and Margaret tests.
+
+
+## VIPOAP 2.0 AI team — latest agreed direction
+
+See [AI team launch decisions](../VIPOAP-2-AI-TEAM-DECISIONS.md) for the named launch team (Olly, Dylan, Molly, Rachel and Sophie), Phase 2 (Frank, Chloe and Ben), shared cost controls, HQ-only voice handoffs, weekly management meetings and human approval boundaries. This decision record takes precedence over earlier generic AI workforce sequencing; the broader master specification remains in draft PR #60.
+
+This is planning direction, not a completion claim. Engineer join end-to-end verification, HQ portal readiness, Google indexing and core payment/security evidence remain launch blockers. Existing issues #61–#67 own the audit and gated backlog; no merge or deployment without owner approval.

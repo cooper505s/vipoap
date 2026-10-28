@@ -77,3 +77,16 @@ Launch only when:
 - The release has a named owner.
 
 A smaller reliable launch is preferred to a larger incomplete one.
+
+## VIPOAP 2.0 launch blockers
+
+Apply the evidence requirements and ownership in [AI team launch decisions](../VIPOAP-2-AI-TEAM-DECISIONS.md). These checks are open/unverified in this planning update; existing pages and prior fixes do not constitute end-to-end proof.
+
+- [ ] Engineer join form verified through persistence, HQ review, onboarding/vetting and human HQ-only activation, including failure/retry paths (#64, #63).
+- [ ] HQ portal sign-in/recovery, role/territory isolation, approvals and operational journeys verified; distinguish staff/task UI from running AI managers (#64, #63).
+- [ ] Google indexing evidence recorded for agreed public pages: canonical/sitemap/robots checks, authorised Search Console submission and actual URL Inspection status; private portals excluded (#64).
+- [ ] Core payment and security tests pass in approved test environments, including failure, duplicate-event, concurrency, authorisation and reconciliation cases (#62, #63).
+- [ ] AI roles, cost hard stops, verified HQ-only manager voice handoffs, human approval controls, urgent alerts and 24/7 receptionist fallback evaluated before enablement (#67, #61).
+- [ ] Dylan's release evidence, monitoring, rehearsed rollback/recovery and explicit owner release approval recorded (#65); Olly's consolidated blocker review recorded in #66.
+
+Do not merge or deploy without owner approval. This checklist update neither runs these tests nor closes these blockers.
