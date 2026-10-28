@@ -1,11 +1,6 @@
-import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import {DatabaseSync} from 'node:sqlite';
+import test from 'node:test';import assert from 'node:assert/strict';
 import {commitBookingChange} from '../functions/_shared/booking-transactions.js';
-function setup(){
-  const sql=new DatabaseSync(':memory:');sql.exec('PRAGMA foreign_keys=ON');sql.exec(fs.readFileSync(new URL('../migrations/0011_booking_transactions.sql',import.meta.url),'utf8'));
-  let queue=Promise.resolve();
-  const db={prepare(query){return{query,values:[],bind(...values){this.values=values;return this;},async first(){return sql.prepare(query).get(...this.values)||null;}};},batch(statements){const run=queue.then(()=>{sql.exec('BEGIN');try{const result=statements.map(item=>{const statement=sql.prepare(item.query);if(item.query.startsWith('SELECT '))return{results:statement.all(...item.values),meta:{changes:0}};const saved=statement.run(...item.values);return{results:[],meta:{changes:Number(saved.changes)}};});sql.exec('COMMIT');return result;}catch(error){sql.exec('ROLLBACK');throw error;}});queue=run.catch(()=>{});return run;}};
-  return{db,sql};
-}
+import {bookingDatabase as setup} from './helpers/booking-database.mjs';
 const change=(patch={})=>({bookingId:'booking:synthetic',expectedRevision:0,requestId:crypto.randomUUID(),snapshot:{status:'requested',engineer:'synthetic-one'},events:[{kind:'engineer-assignment',payload:{reference:'SYNTHETIC'}}],...patch});
 const count=(sql,table)=>sql.prepare(`SELECT count(*) n FROM ${table}`).get().n;
 const slot=(startMs=1000,endMs=2000,engineerId='synthetic-one')=>({engineerId,startMs,endMs});

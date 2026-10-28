@@ -2,7 +2,7 @@
 
 ## Current status
 
-`booking-transactions.js` and standalone migration0011 are tested foundations only. No HTTP handler imports the module, no schema change has been applied to production, no KV record is migrated, and no notification dispatcher reads its outbox. Live bookings still use KV. Do not describe production double-booking prevention or exactly-once fulfillment as complete.
+`booking-transactions.js`, `booking-outbox.js` and migrations0011–0012 are tested foundations only. No HTTP handler or scheduled trigger imports these modules, no schema change has been applied to production, no KV record is migrated, and no live dispatcher reads this outbox. Live bookings still use KV. Do not describe production double-booking prevention or exactly-once fulfillment as complete.
 
 The primitive atomically commits a revision-checked booking snapshot, immutable request receipt, optional engineer time reservation and pending notification intents using one D1 batch. Database triggers reject overlapping half-open UTC intervals for one engineer. A conflicting reschedule rolls back, retaining the old slot. Identical request retries return their original revision; changed content under the same request ID conflicts. Failed outbox writes roll back the booking and receipt. Notifications are never sent by this module.
 
@@ -10,9 +10,15 @@ Callers must authenticate, authorize territory/ownership, enforce business state
 
 ## Verification
 
-323 tests pass, including 12 real SQLite cases with foreign keys enabled: state/outbox atomicity, optimistic revisions, competing creates/updates, retry identity, changed-content rejection, overlapping/adjacent/different-engineer slots, reschedule rollback, explicit release, missing records and bounded inputs. The local adapter serializes SQL transactions as D1 does; these are not distributed load tests or proof of the Cloudflare deployment. D1 schema validation passes. Cloudflare documents transactional rollback for batch statements: https://developers.cloudflare.com/d1/worker-api/d1-database/#batch .
+329 tests pass, including 18 real SQLite cases with foreign keys enabled: state/outbox atomicity, optimistic revisions, competing creates/updates, retry identity, changed-content rejection, overlapping/adjacent/different-engineer slots, reschedule rollback, explicit release, missing records, bounded inputs and leased delivery. The local adapter serializes SQL transactions as D1 does; these are not distributed load tests or proof of the Cloudflare deployment. D1 schema validation passes. Cloudflare documents transactional rollback for batch statements: https://developers.cloudflare.com/d1/worker-api/d1-database/#batch .
 
 Migration0011 was applied only to the isolated preview D1 database e7ac3c3a-9c55-4674-a2d0-ae28c6c23967. Four tables and two overlap triggers were verified. A clearly synthetic reservation for qa-engineer-preview-only at epoch milliseconds1000–2000 succeeded; a second reservation at1500–2500 was rejected with booking-slot-conflict. Only the first slot remains. Synthetic records qa-foundation-one-20261028 and possibly the failed request's parent qa-foundation-two-20261028 are preview fixtures, never real bookings. No outbox messages were created. This verifies D1 schema/trigger compatibility, not the module's actual Worker batch invocation or full workflow integration. Production schema remains unchanged.
+
+## Inactive delivery consumer
+
+Migration0012 adds delivery leases, retry scheduling and acceptance/error markers. The internal consumer claims one event atomically, increments its bounded attempt count, and requires explicit provider acceptance before recording success. Retries keep the original outbox ID. Delivery callbacks must use that ID as the provider idempotency key and honor the supplied timeout signal. A stale worker cannot overwrite a newer lease; interrupted leases can be recovered, and exhausted work remains failed for review. Generic failure markers exclude provider error bodies and customer content.
+
+The callback is injected; no real provider adapter, public route or cron is enabled. Tests use synthetic callbacks. Acceptance is not inbox delivery. Leases do not provide exactly-once external effects: provider reconciliation, idempotency retention windows, provider adapters, queue monitoring/manual retry and operational authorization remain gates before activation. A callback that ignores its signal may outlive its lease; provider deduplication is therefore mandatory.
 
 ## Required staged integration
 
