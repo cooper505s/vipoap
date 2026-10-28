@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="/assets/favicon-32.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="../assets/fonts.css">
-  <link rel="stylesheet" href="account.css?v=1">
+  <link rel="stylesheet" href="account.css?v=2">
   <link rel="stylesheet" href="account-family.css?v=1">
 </head>
 <body>
@@ -47,7 +47,7 @@
       <section class="account-view" data-panel="settings" aria-labelledby="settings-title"><div class="section-heading"><div><p class="eyebrow">Your preferences</p><h2 id="settings-title">Account settings</h2><p>Tell us how to communicate with you. Protected account details can only be changed by contacting VIPOAP.</p></div></div><section class="card settings-card"><div class="field"><label for="accountName">Name</label><input id="accountName" disabled></div><div class="field"><label for="accountEmail">Email address</label><input id="accountEmail" type="email" disabled></div><div class="field"><label for="accountPhone">Phone number</label><input id="accountPhone" type="tel" disabled></div><p class="muted">To change your name, email address or phone number, contact VIPOAP so we can verify the request safely.</p><div class="field"><label for="accountPreferredContact">Preferred contact method</label><select id="accountPreferredContact"><option>Email</option><option>Phone</option><option>SMS</option><option disabled>WhatsApp (coming soon)</option></select></div><div class="field"><label for="accountAccessibility">Accessibility or communication preferences</label><textarea id="accountAccessibility" maxlength="800" placeholder="For example: please speak slowly or use larger text in printed notes."></textarea></div><button class="button primary" id="savePreferences" type="button">Save preferences</button><p id="preferenceStatus" class="form-status" aria-live="polite"></p></section></section>
     </section>
   </main>
-  <script src="stripe-embedded.js?v=1"></script><script src="account.js?v=3"></script>
-  <script src="../assets/connectivity.js"></script>
+  <script src="stripe-embedded.js?v=1"></script><script src="account.js?v=4"></script>
+  <script src="account-navigation.js?v=1"></script><script src="../assets/connectivity.js"></script>
 </body>
 </html>

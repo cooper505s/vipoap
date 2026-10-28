@@ -26,7 +26,7 @@
 let adminPassword=sessionStorage.getItem('vipoapAdmin')||'',adminSession=sessionStorage.getItem('vipoapAdminSession')||'';const $=id=>document.getElementById(id),headers=()=>({'content-type':'application/json','x-admin-password':adminPassword,'x-admin-session':adminSession});async function check(){const response=await fetch('/api/admin/tickets',{headers:headers()}),data=await response.json();if(!response.ok)throw Error(data.error||'Sign-in failed.');return data}async function signIn(){adminPassword=$('password').value;$('loginStatus').textContent='Signing in…';try{await check();sessionStorage.setItem('vipoapAdmin',adminPassword);$('login').classList.add('hidden');$('os').classList.remove('hidden')}catch(error){$('loginStatus').textContent=error.message}}$('loginBtn').onclick=signIn;$('password').onkeydown=event=>{if(event.key==='Enter')signIn()};(async()=>{if(adminPassword||adminSession)try{await check();$('login').classList.add('hidden');$('os').classList.remove('hidden')}catch{sessionStorage.removeItem('vipoapAdmin');sessionStorage.removeItem('vipoapAdminSession')}})();
 </script>
 <script src="email-login.js?v=6"></script>
-<script src="ticket-workspace.js?v=3"></script>
-<script src="mobile-nav.js?v=5"></script>
+<script src="ticket-workspace.js?v=4"></script>
+<script src="mobile-nav.js?v=6"></script>
 </body>
 </html>
