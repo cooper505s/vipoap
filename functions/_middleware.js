@@ -11,7 +11,7 @@ const SECURITY_HEADERS={
 };
 function secure(response) {
   const headers=new Headers(response.headers);
-  for(const [key,value] of Object.entries(SECURITY_HEADERS))headers.set(key,value);
+  for(const [key,value] of Object.entries(SECURITY_HEADERS)){if(key==='referrer-policy'&&headers.get(key)==='no-referrer')continue;headers.set(key,value)}
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
 export async function onRequest({request,next}) {
@@ -27,6 +27,7 @@ export async function onRequest({request,next}) {
   if(preview)headers.set('x-robots-tag','noindex, nofollow');
   const page=url.pathname.replace(/\.html$/,'');
   if(page.startsWith('/admin')||['/app/account','/review','/additional-time'].includes(page)||url.searchParams.has('access')||url.searchParams.has('token'))headers.set('x-robots-tag','noindex, nofollow');
+  if(page==='/additional-time'){headers.set('cache-control','no-store');headers.set('referrer-policy','no-referrer')}
   if(url.pathname.startsWith('/api/'))headers.set('cache-control','no-store');
   else if(url.pathname==='/admin'||url.pathname.startsWith('/admin/')||url.pathname==='/app'||url.pathname.startsWith('/app/')||url.pathname==='/assets/portal-navigation.js')headers.set('cache-control','no-cache');
   return secure(new Response(response.body,{status:response.status,statusText:response.statusText,headers}));

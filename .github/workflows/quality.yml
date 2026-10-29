@@ -27,6 +27,12 @@ jobs:
           node-version: 24
       - name: Run complete platform suite
         run: npm test
+      - name: Validate D1 schema
+        run: node scripts/validate-d1-schema.mjs
+      - name: Compile Cloudflare Pages functions
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: npx --yes wrangler@3.114.17 pages functions build functions --outdir "$RUNNER_TEMP/vipoap-functions" --compatibility-date 2026-08-01
       - name: Check PR head commit for whitespace errors
         if: github.event_name == 'pull_request'
         run: git show --check --oneline --no-renames "${{ github.event.pull_request.head.sha }}"
