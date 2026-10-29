@@ -16,3 +16,5 @@
 @media(min-width:851px){.customer-workspace.customer-compact{--customer-sidebar:64px}.customer-workspace.customer-compact .account-nav button{padding:10px}.customer-workspace.customer-compact .skip-link{left:76px}}
 @media(max-width:850px){.customer-workspace main.shell{padding:16px}.customer-workspace .customer-sidebar{width:236px}.customer-workspace .account-nav button{min-height:44px}.customer-workspace .header-inner{padding:10px 14px}.customer-workspace .skip-link{left:12px}}
 @media(max-width:850px){.customer-workspace .button{min-height:44px}}
+
+.welcome-card[hidden]{display:none!important}.account-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.customer-workspace .section-heading h1{font-size:23px;line-height:1.3;margin:0 0 6px;color:#172b4d}.customer-workspace .section-heading h1:focus{outline:none}.customer-workspace [data-panel="overview"]>.section-heading{position:relative;padding:0 0 10px;min-height:36px;justify-content:flex-end}
