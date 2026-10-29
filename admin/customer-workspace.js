@@ -2,7 +2,8 @@
   const app=document.getElementById('app'),select=document.getElementById('customerSelect'),editor=document.getElementById('editor');
   if(!app||!select||!editor)return;
   const directory=select.closest('section');directory.classList.add('customer-directory');
-  directory.querySelector('h2').textContent='Customers';
+  directory.querySelector('h2').remove();
+  const pageTitle=document.querySelector('.os-page-heading h1,.os-page-heading h2');if(pageTitle)pageTitle.textContent='Customers';
   const field=select.closest('.field');field.hidden=true;
   const search=document.createElement('input');search.id='customerSearch';search.type='search';search.placeholder='Name, phone or postcode';
   const label=document.createElement('label');label.htmlFor=search.id;label.textContent='Search customers';directory.append(label,search);

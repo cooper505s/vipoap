@@ -51,7 +51,7 @@ window.vipoapWorkspaceReady=(async () => {
       const can=permission=>data.permissions?.includes('*')||data.permissions?.includes(permission);
       engineer=data.role==='operator';signIn=engineer?'/admin/':'/admin/hq';
       brand.href=engineer?'/admin/':'/admin/control';brand.querySelector('small').textContent=engineer?'Partner workspace':'HQ workspace';
-      bar.querySelector('.workspace-context strong').textContent=engineer?'Partner workspace':'HQ workspace';bar.querySelector('.workspace-context small').textContent=' / '+(document.querySelector('main .os-page-heading h1,main .page-heading h1,main>header h1')?.textContent||document.title.split('|')[0]);
+      bar.querySelector('.workspace-context strong').textContent=engineer?'Partner workspace':'HQ workspace';const area=staffNavigation(data).find(item=>routePath(item.href)===routePath(path))?.section;bar.querySelector('.workspace-context small').textContent=area&&area!=='Workspace'&&area.toLowerCase()!==String(document.querySelector('main .page-heading h1,main .os-page-heading h1')?.textContent||'').toLowerCase()?' / '+area:'';
       const applyPermissions=()=>document.querySelectorAll('[data-requires-permission]').forEach(element=>{element.hidden=!can(element.dataset.requiresPermission);});applyPermissions();new MutationObserver(applyPermissions).observe(document.body,{childList:true,subtree:true});
       const {mountNavigation}=await import('/admin/navigation-groups.js?v=2');
       mountNavigation({container:links,items:staffNavigation(data),path:routePath(path),role:data.role,iconSvg});
@@ -62,7 +62,7 @@ window.vipoapWorkspaceReady=(async () => {
         const main=document.querySelector('main');main.replaceChildren();const title=document.createElement('h1');title.textContent='Access restricted';const text=document.createElement('p');text.textContent='Your account does not have access to this workspace.';main.append(title,text);document.body.classList.add('workspace-ready');return;
       }
       if(!data.territoryIds?.includes('*'))document.querySelectorAll('[data-global-hq]').forEach(element=>element.hidden=true);
-      const {enhancePage}=await import('/admin/page-layouts.js?v=1');enhancePage(data);bar.querySelector('.workspace-context small').textContent=' / '+(document.querySelector('main .os-page-heading h1,main .page-heading h1,main>header h1')?.textContent||document.title.split('|')[0]);
+      const {enhancePage}=await import('/admin/page-layouts.js?v=1');enhancePage(data);bar.querySelector('.workspace-context small').textContent=area&&area!=='Workspace'&&area.toLowerCase()!==String(document.querySelector('main .page-heading h1,main .os-page-heading h1')?.textContent||'').toLowerCase()?' / '+area:'';
       document.body.classList.add('workspace-ready');document.dispatchEvent(new CustomEvent('workspace-ready',{detail:data}));return data;
     } catch {const main=document.querySelector('main');main.textContent='We could not open the workspace. Please refresh to try again.';document.body.classList.add('workspace-ready');}
   }

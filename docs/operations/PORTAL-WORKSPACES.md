@@ -33,3 +33,12 @@ The agreed launch roster is Dan Stevens (Managing Director), Olly (Operations Ma
 Authenticated legacy pages run a head bootstrap before login markup can paint. While the real session is checked, a neutral loading state replaces the obsolete sign-in form; failure offers reload and unauthenticated login pages remain available. Workspace assets use new versioned URLs.
 
 Helpdesk uses a compact table, 50-row pagination and on-demand ticket details containing the existing actions. Customer directories also paginate loaded/searchable records in groups of 50. This bounds rendered rows, not the underlying KV scan. Other staff pages use tighter shared spacing and no forced minimum content height. HQ destinations have distinct icons. In the collapsed desktop sidebar, sections open labelled flyouts and preserve accessible destination names. Permission filtering is unchanged.
+
+
+## Company chart and profiles
+
+Organisation is now a reporting tree with connected profile cards and an indented mobile layout. Each member appears once, including malformed/cyclic/disconnected reporting data without infinite recursion. Select a card for responsibilities, working style, nationality and reporting details. The directory and AI-only view use the same compact cards and profile dialogue. Eight fictional portraits wear the user-supplied VIPOAP navy/cream startup clothing and chest branding; no human likeness was fabricated. Human photos can be uploaded by authorised staff managers through the private staff-photo endpoint, with scoped access, image-format/size validation and no-store responses. Uploaded photos are stored separately from staff listings and are never public static assets. Availability is not inferred from active directory status.
+
+Staff profile defaults are presentation metadata only, preserving existing staff records, assignments, phase-two status and provider connection status. No agent execution, customer reply, staff holiday simulation, email signature or cover automation is introduced by this release. Those communication changes remain separate work.
+
+Page chrome now shows the parent navigation section rather than repeating the page title. Helpdesk removes its duplicate desk/ticket titles, Customers has one page title, and Marketing panel headings describe their actual contents. New versioned script references avoid the prior stale asset problem.
