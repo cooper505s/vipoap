@@ -17,11 +17,14 @@ export async function planAdditionalTimeRequest({env,snapshot,requestId,operator
  const approval={id:'additional-time-request:'+requestId,operatorId,blocks,minutes:blocks*30,chargePence,entitlementPence,createdAt:now,expiresAt:new Date(Date.parse(now)+3600000).toISOString(),status:'pending'};
  return {patch:{pendingAdditionalTimeApproval:approval.id,pendingAdditionalTimeRequest:approval,additionalTimeApprovals:pending?[...prior,{...pending,status:'expired',respondedAt:now}]:prior},events:[{kind:'booking-additional-time-requested',payload:{approvalId:approval.id,blocks}}]};
 }
-export async function planAdditionalTimeDecision({env,bookingId,snapshot,approvalId,decision,now,approvalMethod='customer-account'}){
+export async function planAdditionalTimeDecision({env,bookingId,snapshot,approvalId,decision,now,approvalMethod='customer-account',engineerConsent}){
  active(snapshot);const approval=snapshot.pendingAdditionalTimeRequest;
  if(!approval||approval.id!==approvalId||snapshot.pendingAdditionalTimeApproval!==approvalId||approval.status!=='pending'||!Number.isFinite(Date.parse(approval.expiresAt))||Date.parse(approval.expiresAt)<=Date.parse(now))throw fail('This approval request is no longer current or has expired.');
  if(!Number.isInteger(approval.blocks)||approval.blocks<1||approval.blocks>6||approval.minutes!==approval.blocks*30||!Number.isSafeInteger(approval.chargePence)||approval.chargePence<0||!Number.isSafeInteger(approval.entitlementPence)||approval.entitlementPence<0||!approval.operatorId||(snapshot.operatorId||snapshot.assignedEngineerId)!==approval.operatorId||[snapshot.operatorId,snapshot.assignedEngineerId,snapshot.assignedProviderId].some(id=>id&&id!==approval.operatorId))throw fail('This additional-time request needs review.');
- const patch={pendingAdditionalTimeApproval:'',pendingAdditionalTimeRequest:null,additionalTimeApprovals:[...history(snapshot),{...approval,status:decision,respondedAt:now}]};
+ const consent=engineerConsent?{source:'engineer-record',method:engineerConsent.method,note:engineerConsent.note,recordedBy:engineerConsent.operatorId,recordedAt:now}:null;
+ if(consent&&(decision!=='approved'||!['verbal','written'].includes(consent.method)||typeof consent.note!=='string'||!consent.note.trim()||consent.note.length>500||consent.recordedBy!==approval.operatorId))throw fail('Customer consent needs a valid record from the assigned engineer.');
+ if(consent)approvalMethod='engineer-recorded-'+consent.method;
+ const patch={pendingAdditionalTimeApproval:'',pendingAdditionalTimeRequest:null,additionalTimeApprovals:[...history(snapshot),{...approval,status:decision,respondedAt:now,...(consent?{consent}:{})}]};
  let reservation;
  if(decision==='approved'){
   if(snapshot.additionalTime!==undefined&&!Array.isArray(snapshot.additionalTime))throw fail('This appointment needs an additional-time review.');
@@ -32,7 +35,7 @@ export async function planAdditionalTimeDecision({env,bookingId,snapshot,approva
   reservation={engineerId:slot.engineer_id,startMs:slot.start_ms,endMs:slot.end_ms+approval.minutes*60000};
   Object.assign(patch,{additionalTime:[...(snapshot.additionalTime||[]),{approvalId,blocks:approval.blocks,minutes:approval.minutes,charge:approval.chargePence/100,approvalMethod,approvedAt:now}],additionalAmount:(current+approval.chargePence)/100,providerAdditionalEntitlementPence:entitlement+approval.entitlementPence,paymentStatus:snapshot.paymentMethod==='cash'?'cash-due':'additional-payment-due'});
  }
- return {patch,reservation,events:[{kind:'booking-additional-time-decided',payload:{approvalId,decision}}]};
+ return {patch,reservation,events:[{kind:'booking-additional-time-decided',payload:{approvalId,decision,...(consent?{consentMethod:consent.method}:{})}}]};
 }
 
 export async function loadCustomerAdditionalTimeRequest({request,env,bookingId,now=new Date().toISOString()}){

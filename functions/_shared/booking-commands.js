@@ -10,6 +10,7 @@ async function hash(value){const bytes=await crypto.subtle.digest('SHA-256',new 
 function fields(payload,allowed){return payload&&Object.getPrototypeOf(payload)===Object.prototype&&Object.keys(payload).every(key=>allowed.includes(key));}
 function text(value,max){if(typeof value!=='string'||value.length>max)throw failure('Please check the booking change.',400);return value.trim().replace(/[<>]/g,'');}
 function normalize(kind,payload){
+  if(kind==='engineer-record-additional-consent'){if(!fields(payload,['approvalId','method','consentNote','confirmed'])||typeof payload.approvalId!=='string'||!/^additional-time-request:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(payload.approvalId)||!['verbal','written'].includes(payload.method)||payload.confirmed!==true)throw failure('Confirm the customer consent and how it was given.',400);const consentNote=text(payload.consentNote,500);if(consentNote.length<3)throw failure('Add a concise factual consent note.',400);return{approvalId:payload.approvalId,method:payload.method,consentNote,confirmed:true}}
   if(kind==='customer-link-decide-additional-time'){if(!fields(payload,['decision'])||!['approved','declined'].includes(payload.decision))throw failure('Choose a valid additional-time response.',400);return{decision:payload.decision}}
   if(kind==='engineer-request-additional-time'){if(!fields(payload,['blocks'])||!Number.isInteger(payload.blocks)||payload.blocks<1||payload.blocks>6)throw failure('Choose between one and six additional half-hours.',400);return{blocks:payload.blocks}}
   if(kind==='customer-decide-additional-time'){if(!fields(payload,['approvalId','decision'])||typeof payload.approvalId!=='string'||!/^additional-time-request:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(payload.approvalId)||!['approved','declined'].includes(payload.decision))throw failure('Choose a valid additional-time response.',400);return{approvalId:payload.approvalId,decision:payload.decision}}
@@ -41,12 +42,12 @@ async function receipt(db,{requestId,bookingId,metadata}){
   return{bookingId,revision:prior.revision,reused:true};
 }
 export async function executeBookingCommand({request,env,bookingId,expectedRevision,requestId,kind,payload,approvalToken,now=new Date().toISOString()}){
-  if(!['set-admin-note','customer-appointment-request','engineer-job-transition','engineer-job-decline','hq-assign-engineer','report-booking-safety','engineer-request-additional-time','customer-decide-additional-time','customer-link-decide-additional-time'].includes(kind))throw failure('Unsupported booking change.',400);
+  if(!['set-admin-note','customer-appointment-request','engineer-job-transition','engineer-job-decline','hq-assign-engineer','report-booking-safety','engineer-request-additional-time','customer-decide-additional-time','customer-link-decide-additional-time','engineer-record-additional-consent'].includes(kind))throw failure('Unsupported booking change.',400);
   const linkCommand=kind==='customer-link-decide-additional-time',staffCommand=!['customer-appointment-request','customer-decide-additional-time','customer-link-decide-additional-time'].includes(kind);
   const booking=linkCommand?await loadBookingApprovalLink({env,token:approvalToken,bookingId,now,allowConsumed:true}):staffCommand?await loadAdminBooking({request,env,bookingId,permission:kind==='hq-assign-engineer'?'manage_operations':kind==='report-booking-safety'?'report_incidents':'manage_calls'}):await loadCustomerBooking({request,env,bookingId});
   bookingId=booking.bookingId;
   if(!Number.isSafeInteger(expectedRevision)||expectedRevision<1||expectedRevision>=Number.MAX_SAFE_INTEGER||typeof requestId!=='string'||!requestPattern.test(requestId)||typeof now!=='string'||!Number.isFinite(Date.parse(now)))throw failure('A valid booking revision and unique request are required.',400);
-  if((kind.startsWith('engineer-job-')||kind==='engineer-request-additional-time')&&booking.context.role!=='operator')throw failure('An assigned engineer session is required.',403);
+  if((kind.startsWith('engineer-job-')||kind==='engineer-request-additional-time'||kind==='engineer-record-additional-consent')&&booking.context.role!=='operator')throw failure('An assigned engineer session is required.',403);
   if(kind==='hq-assign-engineer'&&booking.context.role==='operator')throw failure('HQ assignment access is required.',403);
   const input={...normalize(kind,payload),...(linkCommand?{approvalId:booking.context.approvalId}:{})},id=requestId.toLowerCase(),context=booking.context;
   const actor=linkCommand?['approval-link',context.approvalId,context.customerHash]:staffCommand?['admin',context.role,context.operatorId,context.email]:['customer',context.customerId];
@@ -55,7 +56,9 @@ export async function executeBookingCommand({request,env,bookingId,expectedRevis
   const prior=await receipt(db,{requestId:id,bookingId,metadata});if(prior)return result(prior);
   if(booking.revision!==expectedRevision)throw failure('This booking changed. Refresh before trying again.',409);
   const snapshot=booking.snapshot,timestamp=new Date(now).toISOString();let patch,events,reservation,safetyCase;
-  if(kind==='engineer-request-additional-time'||kind==='customer-decide-additional-time'||linkCommand){
+  if(kind==='engineer-record-additional-consent'){
+    const planned=await planAdditionalTimeDecision({env,bookingId,snapshot,approvalId:input.approvalId,decision:'approved',now:timestamp,engineerConsent:{method:input.method,note:input.consentNote,operatorId:context.operatorId}});patch=planned.patch;reservation=planned.reservation;events=planned.events.map(event=>({...event,payload:{...event.payload,bookingId,requestId:id,actor:metadata.actor}}));
+  }else if(kind==='engineer-request-additional-time'||kind==='customer-decide-additional-time'||linkCommand){
     const planned=kind==='engineer-request-additional-time'?await planAdditionalTimeRequest({env,snapshot,requestId:id,operatorId:context.operatorId,blocks:input.blocks,now:timestamp}):await planAdditionalTimeDecision({env,bookingId,snapshot,...input,now:timestamp,approvalMethod:linkCommand?'customer-link':'customer-account'});
     patch=planned.patch;reservation=planned.reservation;events=planned.events.map(event=>({...event,payload:{...event.payload,bookingId,requestId:id,actor:metadata.actor}}));
   }else if(kind==='report-booking-safety'){
