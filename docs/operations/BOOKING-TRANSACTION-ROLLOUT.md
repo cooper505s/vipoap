@@ -115,3 +115,10 @@ This is a durable unfilled/reassignment hand-off, not automatic replacement sele
 UTC interval endpoints are compared against UK schedule endpoints, including clock changes. Missing/inconsistent reservations and active/closed/refunded appointments require review. Prices, customer identity and payment facts remain unchanged. No provider is called, and the internal event is not itself a delivered notification.
 
 Eligibility and availability still come from legacy KV and are not locked by the booking transaction. The existing legacy-compliance policy is reused, including its legacy-record handling. Eligibility changes, policy review and every-writer coordination therefore remain explicit cutover gates; this module cannot establish a production-wide eligibility guarantee. No live route imports it, and no storage authority has switched.
+
+
+### Assignment eligibility follow-up
+
+New replacement assignments evaluate the existing compliance policy both at the server timestamp and on the appointment date. Non-empty malformed DBS/insurance expiry dates require review. Expiry on the appointment date follows the existing inclusive-day policy. This does not change the legacy-record fallback or create missing compliance evidence.
+
+Modern service-specific schedule blocks and legacy weekly ranges are validated before interval comparison. Malformed blocks, overrides, blocked dates and reversed ranges produce a 409 review conflict without mutation. Selecting an already assigned engineer remains a no-op for assignment/progress and notification events; it is not a fresh eligibility approval. Legacy KV eligibility concurrency and final policy review remain cutover gates.

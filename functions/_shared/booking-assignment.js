@@ -4,6 +4,23 @@ import {operatorCanReceiveWork} from './compliance.js';
 import {ukAppointmentInterval} from './booking-time.js';
 const fail=(message,status=409)=>Object.assign(new Error(message),{status});
 const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const validDate=value=>{try{return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&new Date(value+'T12:00:00Z').toISOString().slice(0,10)===value}catch{return false}};
+const validTime=value=>typeof value==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+function scheduleRanges(availability,day,service){
+ let ranges;
+ if(availability.weeklyBlocks!==undefined){
+  if(!availability.weeklyBlocks||typeof availability.weeklyBlocks!=='object'||Array.isArray(availability.weeklyBlocks))throw fail('The engineer schedule needs review.');
+  const blocks=availability.weeklyBlocks[day]??[];
+  if(!Array.isArray(blocks)||blocks.some(block=>!block||!validTime(block.start)||!validTime(block.end)||block.start>=block.end||!Array.isArray(block.services)||!block.services.length||block.services.some(value=>!['home','remote'].includes(value))))throw fail('The engineer schedule needs review.');
+  ranges=blocks.filter(block=>block.services.includes(service)).map(block=>[block.start,block.end]);
+ }else{
+  const weekly=(service==='remote'?availability.remoteWeekly:availability.homeVisitWeekly)??{};
+  if(typeof weekly!=='object'||Array.isArray(weekly))throw fail('The engineer schedule needs review.');
+  ranges=weekly[day]??[];
+ }
+ if(!Array.isArray(ranges)||ranges.some(range=>!Array.isArray(range)||range.length!==2||!validTime(range[0])||!validTime(range[1])||range[0]>=range[1]))throw fail('The engineer schedule needs review.');
+ return ranges;
+}
 const closed=['completed','cancelled','declined','in-progress','safety-stopped','awaiting-final-settlement','partially-resolved','unresolved','follow-up-booked'];
 export async function planEngineerAssignment({env,booking,operatorId,now}){
  const snapshot=booking.snapshot,territory=snapshot.territoryId;
@@ -17,10 +34,11 @@ export async function planEngineerAssignment({env,booking,operatorId,now}){
  if(aliases[0]===operatorId)return {patch:{},events:[]};
  if(interval.startMs<=Date.parse(now)||snapshot.pendingAdditionalTimeApproval||(snapshot.additionalTime!==undefined&&(!Array.isArray(snapshot.additionalTime)||snapshot.additionalTime.length)))throw fail('This appointment needs review before reassignment.');
  const operator=await env.VIPOAP_DATA.get('operator:'+operatorId,'json'),service=snapshot.supportType==='Remote support'?'remote':'home';
- if(!operator||typeof operator!=='object'||!Array.isArray(operator.territoryIds)||(operator.serviceTypes!==undefined&&!Array.isArray(operator.serviceTypes))||operator.id!==operatorId||!(operator.territoryIds||[]).some(id=>id==='*'||id===territory)||!(operator.serviceTypes||['home','remote']).includes(service)||!operatorCanReceiveWork(operator,new Date(now),service))throw fail('Choose an eligible engineer for this service and territory.');
+ if(!operator||typeof operator!=='object'||!Array.isArray(operator.territoryIds)||(operator.serviceTypes!==undefined&&!Array.isArray(operator.serviceTypes))||operator.id!==operatorId||!(operator.territoryIds||[]).some(id=>id==='*'||id===territory)||!(operator.serviceTypes||['home','remote']).includes(service)||!operatorCanReceiveWork(operator,new Date(now),service)||!operatorCanReceiveWork(operator,new Date(snapshot.date+'T12:00:00Z'),service)||['dbsRenewalDate','insuranceExpiryDate'].some(field=>operator[field]!==undefined&&operator[field]!==''&&!validDate(operator[field])))throw fail('Choose an eligible engineer for this service and territory.');
  const availability=await env.VIPOAP_DATA.get(`availability:${territory}:${operatorId}`,'json');
- if(!availability||typeof availability!=='object'||(availability.blockedDates!==undefined&&!Array.isArray(availability.blockedDates))||(availability.overrides!==undefined&&!Array.isArray(availability.overrides))||(availability.blockedDates||[]).includes(snapshot.date)||(availability.overrides||[]).some(item=>item.date===snapshot.date&&item.status==='blocked'))throw fail('The engineer is unavailable on this date.');
- const day=days[new Date(snapshot.date+'T12:00:00Z').getUTCDay()],ranges=availability.weeklyBlocks?.[day]?.filter(item=>item.services?.includes(service)).map(item=>[item.start,item.end])??(service==='remote'?availability.remoteWeekly:availability.homeVisitWeekly)?.[day]??[];
+ if(!availability||typeof availability!=='object'||Array.isArray(availability)||(availability.blockedDates!==undefined&&(!Array.isArray(availability.blockedDates)||availability.blockedDates.some(date=>!validDate(date))))||(availability.overrides!==undefined&&(!Array.isArray(availability.overrides)||availability.overrides.some(item=>!item||!validDate(item.date)||!['blocked','available'].includes(item.status)))))throw fail('The engineer schedule needs review.');
+ if((availability.blockedDates||[]).includes(snapshot.date)||(availability.overrides||[]).some(item=>item.date===snapshot.date&&item.status==='blocked'))throw fail('The engineer is unavailable on this date.');
+ const day=days[new Date(snapshot.date+'T12:00:00Z').getUTCDay()],ranges=scheduleRanges(availability,day,service);
  const scheduled=ranges.some(range=>{try{const start=ukAppointmentInterval({date:snapshot.date,time:range[0],durationMinutes:1}).startMs,end=ukAppointmentInterval({date:snapshot.date,time:range[1],durationMinutes:1}).startMs;return interval.startMs>=start&&interval.endMs<=end}catch{return false}});
  if(!scheduled)throw fail('The engineer is not working throughout this appointment.');
  if(snapshot.assignmentHistory!==undefined&&!Array.isArray(snapshot.assignmentHistory))throw fail('The assignment history needs review.');
