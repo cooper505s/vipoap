@@ -10,7 +10,7 @@ function canonical(value){
 }
 async function fingerprint(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');}
 const size=value=>new TextEncoder().encode(value).byteLength;
-export async function commitBookingChange(db,{bookingId,expectedRevision,requestId,snapshot,events=[],reservation,commandMetadata}){
+export async function commitBookingChange(db,{bookingId,expectedRevision,requestId,snapshot,events=[],reservation,commandMetadata,safetyCase}){
   if(!db)throw failure('Transactional booking storage is unavailable.',503);
   if(typeof bookingId!=='string'||!bookingId||bookingId.length>160||!Number.isSafeInteger(expectedRevision)||expectedRevision<0||expectedRevision>=Number.MAX_SAFE_INTEGER)throw failure('Invalid booking identity or revision.',400);
   if(typeof requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(requestId))throw failure('A unique change request is required.',400);
@@ -25,7 +25,13 @@ export async function commitBookingChange(db,{bookingId,expectedRevision,request
   const slot=reservation===undefined?{mode:'preserve'}:reservation===null?null:{engineerId:reservation.engineerId,startMs:reservation.startMs,endMs:reservation.endMs};
   if(commandMetadata!==undefined&&(!commandMetadata||Object.getPrototypeOf(commandMetadata)!==Object.prototype||Object.keys(commandMetadata).sort().join(',')!=='actor,inputHash,kind,version'||commandMetadata.version!==1||typeof commandMetadata.actor!=='string'||typeof commandMetadata.inputHash!=='string'||!/^[a-f0-9]{64}$/.test(commandMetadata.actor)||!/^[a-f0-9]{64}$/.test(commandMetadata.inputHash)||typeof commandMetadata.kind!=='string'||!/^[a-z][a-z0-9-]{0,79}$/.test(commandMetadata.kind)))throw failure('Invalid booking command receipt.',400);
   const commandJson=commandMetadata===undefined?undefined:canonical(commandMetadata);
-  const id=requestId.toLowerCase(),requestHash=await fingerprint(canonical({bookingId,expectedRevision,snapshot,events:normalized,reservation:slot,...(commandMetadata===undefined?{}:{commandMetadata})}));
+  let caseJson;
+  if(safetyCase!==undefined){
+    if(!safetyCase||Object.getPrototypeOf(safetyCase)!==Object.prototype||Object.keys(safetyCase).sort().join(',')!=='id,report,reporterHash,territoryId'||typeof safetyCase.id!=='string'||!/^incident:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(safetyCase.id)||typeof safetyCase.territoryId!=='string'||!safetyCase.territoryId||safetyCase.territoryId.length>80||typeof safetyCase.reporterHash!=='string'||!/^[a-f0-9]{64}$/.test(safetyCase.reporterHash)||!safetyCase.report||Object.getPrototypeOf(safetyCase.report)!==Object.prototype)throw failure('Invalid private safety case.',400);
+    caseJson=canonical(safetyCase.report);if(size(caseJson)>16384)throw failure('Safety report is too large.',413);
+    try{await db.prepare('SELECT id FROM booking_safety_cases LIMIT 0').all()}catch{throw failure('Safety case storage is unavailable.',503)}
+  }
+  const id=requestId.toLowerCase(),requestHash=await fingerprint(canonical({bookingId,expectedRevision,snapshot,events:normalized,reservation:slot,...(commandMetadata===undefined?{}:{commandMetadata}),...(safetyCase===undefined?{}:{safetyCase})}));
   const prior=await db.prepare('SELECT booking_id,request_hash,revision FROM booking_mutations WHERE id=?').bind(id).first();
   if(prior){if(prior.request_hash!==requestHash)throw failure('This request was already used for different booking changes.',409);return{bookingId:prior.booking_id,revision:prior.revision,reused:true};}
   const now=new Date().toISOString(),revision=expectedRevision+1,commitToken=crypto.randomUUID();
@@ -36,6 +42,7 @@ export async function commitBookingChange(db,{bookingId,expectedRevision,request
     ...(commandJson===undefined?[]:[db.prepare('UPDATE booking_mutations SET command_json=? WHERE id=? AND commit_token=?').bind(commandJson,id,commitToken)]),
     ...(reservation===undefined?[]:[db.prepare('DELETE FROM booking_slot_reservations WHERE booking_id=? AND EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?)').bind(bookingId,id,commitToken)]),
     ...(reservation?[db.prepare('INSERT INTO booking_slot_reservations (booking_id,engineer_id,start_ms,end_ms) SELECT ?,?,?,? WHERE EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?)').bind(bookingId,reservation.engineerId,reservation.startMs,reservation.endMs,id,commitToken)]:[]),
+    ...(safetyCase===undefined?[]:[db.prepare("INSERT INTO booking_safety_cases (id,booking_id,mutation_id,territory_id,reporter_hash,report_json,created_at) SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?)").bind(safetyCase.id,bookingId,id,safetyCase.territoryId,safetyCase.reporterHash,caseJson,now,id,commitToken)]),
     ...normalized.map((event,index)=>db.prepare("INSERT INTO booking_outbox (id,mutation_id,booking_id,kind,payload_json,created_at) SELECT ?,?,?,?, ?,? WHERE EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?) ON CONFLICT(id) DO NOTHING").bind(`${id}:${index}`,id,bookingId,event.kind,event.payload,now,id,commitToken))
   ];
   statements.push(db.prepare('SELECT booking_id,request_hash,revision FROM booking_mutations WHERE id=?').bind(id));

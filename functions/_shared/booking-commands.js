@@ -8,6 +8,11 @@ async function hash(value){const bytes=await crypto.subtle.digest('SHA-256',new 
 function fields(payload,allowed){return payload&&Object.getPrototypeOf(payload)===Object.prototype&&Object.keys(payload).every(key=>allowed.includes(key));}
 function text(value,max){if(typeof value!=='string'||value.length>max)throw failure('Please check the booking change.',400);return value.trim().replace(/[<>]/g,'');}
 function normalize(kind,payload){
+  if(kind==='report-booking-safety'){
+    if(!fields(payload,['concernType','severity','description','immediateAction','currentlySafe','stopWork'])||!['critical','high','medium','low'].includes(payload.severity)||typeof payload.currentlySafe!=='boolean'||typeof payload.stopWork!=='boolean')throw failure('Please check the safety report.',400);
+    const concernType=text(payload.concernType,80),description=text(payload.description,2000),immediateAction=text(payload.immediateAction??'',2000);if(!concernType||!description)throw failure('Concern type and description are required.',400);
+    return{concernType,severity:payload.severity,description,immediateAction,currentlySafe:payload.currentlySafe,stopWork:payload.stopWork};
+  }
   if(kind==='hq-assign-engineer'){if(!fields(payload,['operatorId'])||typeof payload.operatorId!=='string'||!/^[-a-zA-Z0-9_]{1,80}$/.test(payload.operatorId))throw failure('Choose a valid engineer.',400);return{operatorId:payload.operatorId}}
   if(kind==='engineer-job-decline'){if(!fields(payload,['reason']))throw failure('Please check the decline reason.',400);return{reason:text(payload.reason??'',500)}}
   if(kind==='engineer-job-transition'){
@@ -31,19 +36,28 @@ async function receipt(db,{requestId,bookingId,metadata}){
   return{bookingId,revision:prior.revision,reused:true};
 }
 export async function executeBookingCommand({request,env,bookingId,expectedRevision,requestId,kind,payload,now=new Date().toISOString()}){
-  if(!['set-admin-note','customer-appointment-request','engineer-job-transition','engineer-job-decline','hq-assign-engineer'].includes(kind))throw failure('Unsupported booking change.',400);
+  if(!['set-admin-note','customer-appointment-request','engineer-job-transition','engineer-job-decline','hq-assign-engineer','report-booking-safety'].includes(kind))throw failure('Unsupported booking change.',400);
   const staffCommand=kind!=='customer-appointment-request';
-  const booking=staffCommand?await loadAdminBooking({request,env,bookingId,permission:kind==='hq-assign-engineer'?'manage_operations':'manage_calls'}):await loadCustomerBooking({request,env,bookingId});
+  const booking=staffCommand?await loadAdminBooking({request,env,bookingId,permission:kind==='hq-assign-engineer'?'manage_operations':kind==='report-booking-safety'?'report_incidents':'manage_calls'}):await loadCustomerBooking({request,env,bookingId});
   if(!Number.isSafeInteger(expectedRevision)||expectedRevision<1||expectedRevision>=Number.MAX_SAFE_INTEGER||typeof requestId!=='string'||!requestPattern.test(requestId)||typeof now!=='string'||!Number.isFinite(Date.parse(now)))throw failure('A valid booking revision and unique request are required.',400);
   if(kind.startsWith('engineer-job-')&&booking.context.role!=='operator')throw failure('An assigned engineer session is required.',403);
   if(kind==='hq-assign-engineer'&&booking.context.role==='operator')throw failure('HQ assignment access is required.',403);
   const input=normalize(kind,payload),id=requestId.toLowerCase(),context=booking.context;
   const actor=staffCommand?['admin',context.role,context.operatorId,context.email]:['customer',context.customerId];
   const metadata={version:1,actor:await hash(actor),kind,inputHash:await hash({bookingId,expectedRevision,kind,payload:input})},db=env.VIPOAP_BOOKING_DB;
-  const prior=await receipt(db,{requestId:id,bookingId,metadata});if(prior)return prior;
+  const result=output=>kind==='report-booking-safety'?{...output,incidentId:'incident:'+id,reference:'SAFE-'+id.toUpperCase()}:output;
+  const prior=await receipt(db,{requestId:id,bookingId,metadata});if(prior)return result(prior);
   if(booking.revision!==expectedRevision)throw failure('This booking changed. Refresh before trying again.',409);
-  const snapshot=booking.snapshot,timestamp=new Date(now).toISOString();let patch,events,reservation;
-  if(kind==='hq-assign-engineer'){const assignment=await planEngineerAssignment({env,booking,operatorId:input.operatorId,now:timestamp});patch=assignment.patch;events=assignment.events.map(event=>({...event,payload:{...event.payload,requestId:id,actor:metadata.actor}}));reservation=assignment.reservation;
+  const snapshot=booking.snapshot,timestamp=new Date(now).toISOString();let patch,events,reservation,safetyCase;
+  if(kind==='report-booking-safety'){
+    if(typeof snapshot.territoryId!=='string'||!snapshot.territoryId||snapshot.territoryId.length>80)throw failure('This appointment needs a verified territory before reporting.',409);
+    if(context.role==='operator'&&[snapshot.operatorId,snapshot.assignedEngineerId].some(value=>value&&value!==context.operatorId))throw failure('Booking not found.',404);
+    if(input.stopWork&&([snapshot.status,snapshot.bookingStatus,snapshot.jobStatus].some(state=>['completed','cancelled','declined','safety-stopped','awaiting-final-settlement','partially-resolved','unresolved','follow-up-booked'].includes(state))||['refunded','refund-pending'].includes(snapshot.paymentStatus)))throw failure('This appointment has already ended or needs payment review. Submit a report without stopping work.',409);
+    const incidentId='incident:'+id,priorState=Object.fromEntries(['status','bookingStatus','jobStatus','paymentStatus'].map(key=>[key,snapshot[key]??null]));
+    safetyCase={id:incidentId,territoryId:snapshot.territoryId,reporterHash:metadata.actor,report:{...input,reporterId:context.operatorId,reference:'SAFE-'+id.toUpperCase(),priorState,createdAt:timestamp}};
+    patch={latestSafetyIncidentKey:incidentId,...(input.stopWork?{status:'safety-stopped',bookingStatus:'safety-stopped',jobStatus:'safety-stopped',paymentStatus:'review',safetyIncidentKey:incidentId}:{})};
+    events=[{kind:'booking-safety-reported',payload:{bookingId,requestId:id,incidentId,stopWork:input.stopWork,actor:metadata.actor}}];
+  }else if(kind==='hq-assign-engineer'){const assignment=await planEngineerAssignment({env,booking,operatorId:input.operatorId,now:timestamp});patch=assignment.patch;events=assignment.events.map(event=>({...event,payload:{...event.payload,requestId:id,actor:metadata.actor}}));reservation=assignment.reservation;
   }else if(kind==='set-admin-note'){
     patch={adminNotes:input.note};events=[{kind:'booking-admin-note-recorded',payload:{bookingId,requestId:id,actor:metadata.actor}}];
   }else if(kind==='engineer-job-transition'){
@@ -69,11 +83,11 @@ export async function executeBookingCommand({request,env,bookingId,expectedRevis
     const reference=`REQ-${id}`;patch={customerRequestStatus:'received',customerRequestType:input.requestType,customerRequestDetails:input.details,customerRequestReference:reference,customerRequestAt:timestamp};
     events=[{kind:'customer-appointment-requested',payload:{bookingId,requestId:id,requestType:input.requestType,reference}}];
   }
-  try{return await commitBookingChange(db,{bookingId,expectedRevision,requestId:id,snapshot:{...snapshot,...patch,updatedAt:timestamp},events,...(reservation===undefined?{}:{reservation}),commandMetadata:metadata});}
+  try{return result(await commitBookingChange(db,{bookingId,expectedRevision,requestId:id,snapshot:{...snapshot,...patch,updatedAt:timestamp},events,...(reservation===undefined?{}:{reservation}),commandMetadata:metadata,...(safetyCase===undefined?{}:{safetyCase})}));}
   catch(error){
     // Concurrent identical commands may build different server timestamps. Their
     // durable command identity, rather than the timestamp, determines replay.
-    if(error.status===409){const committed=await receipt(db,{requestId:id,bookingId,metadata});if(committed)return committed;}
+    if(error.status===409){const committed=await receipt(db,{requestId:id,bookingId,metadata});if(committed)return result(committed);}
     throw error;
   }
 }

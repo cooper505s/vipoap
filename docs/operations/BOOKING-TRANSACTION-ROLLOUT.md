@@ -2,7 +2,7 @@
 
 ## Current status
 
-`booking-transactions.js`, `booking-outbox.js` and migrations0011–0013 are staged foundations only. No HTTP handler or scheduled trigger imports these modules, no schema change has been applied to production, no KV record is migrated, and no live dispatcher reads this outbox. Live bookings still use KV. Do not describe production double-booking prevention or exactly-once fulfillment as complete.
+`booking-transactions.js`, `booking-outbox.js` and migrations0011–0014 are staged foundations only. No HTTP handler or scheduled trigger imports these modules, no schema change has been applied to production, no KV record is migrated, and no live dispatcher reads this outbox. Live bookings still use KV. Do not describe production double-booking prevention or exactly-once fulfillment as complete.
 
 The primitive atomically commits a revision-checked booking snapshot, immutable request receipt, optional engineer time reservation and pending notification intents using one D1 batch. Database triggers reject overlapping half-open UTC intervals for one engineer. A conflicting reschedule rolls back, retaining the old slot. Identical request retries return their original revision; changed content under the same request ID conflicts. Failed outbox writes roll back the booking and receipt. Notifications are never sent by this module.
 
@@ -122,3 +122,14 @@ Eligibility and availability still come from legacy KV and are not locked by the
 New replacement assignments evaluate the existing compliance policy both at the server timestamp and on the appointment date. Non-empty malformed DBS/insurance expiry dates require review. Expiry on the appointment date follows the existing inclusive-day policy. This does not change the legacy-record fallback or create missing compliance evidence.
 
 Modern service-specific schedule blocks and legacy weekly ranges are validated before interval comparison. Malformed blocks, overrides, blocked dates and reversed ranges produce a 409 review conflict without mutation. Selecting an already assigned engineer remains a no-op for assignment/progress and notification events; it is not a fresh eligibility approval. Legacy KV eligibility concurrency and final policy review remain cutover gates.
+
+
+## Private safety report and booking stop (staged)
+
+`report-booking-safety` requires reporting permission and current booking/territory access. Caller fields are allowlisted; reporter identity comes from authentication. It commits a private case, its linked booking revision, command receipt and a minimal internal event in one batch. Report text is stored only in the restricted case table, not in the booking snapshot, receipt metadata or event payload.
+
+With an explicit stop request, all work-status fields become safety-stopped and payment status becomes review. The private immutable report retains the previous status/payment facts. The engineer reservation is preserved for manual safeguarding/operational review rather than silently released for another allocation. Historical/closed/refunded work can receive a report without stopping work; a new stop is rejected on ended/refunded work. Repeated requests return the original case identity and reference.
+
+Migration0014 creates `booking_safety_cases` with booking/mutation foreign keys and scoped status indexing. It has NOT been applied to preview or production. Existing commands remain compatible without0014; safety commands fail closed without it. The private reader requires `manage_incidents` plus case-territory access before returning the report. The existing KV safety API, standalone reporting and case-management workflow have not cut over.
+
+Remaining gates include actual D1 proof of this new case path, scoped queue/triage adapters, standalone-case/import compatibility, review of case retention/access/audit policy and every-writer/payment coordination. Intake expiry cleanup does not cover this table. No provider is called or incident delivered by the internal event, and no live route imports this code. Do not apply production schema or activate it as a completed safety migration.
