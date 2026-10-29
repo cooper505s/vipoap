@@ -1,8 +1,9 @@
+import {brandEmail} from '../../_shared/staff-signatures.js';
 import {requireCustomer} from '../../_shared/customer-auth.js';
 import {audit} from '../../_shared/audit.js';
 const clean=(value,max=800)=>String(value??'').trim().replace(/[<>]/g,'').slice(0,max);
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-async function notify(env,customer,record){if(!env.RESEND_API_KEY||!env.BOOKING_FROM_EMAIL)return false;const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${env.RESEND_API_KEY}`,'content-type':'application/json','idempotency-key':`${record.reference}-membership-request`},body:JSON.stringify({from:env.BOOKING_FROM_EMAIL,to:['help@vipoap.co.uk'],subject:`Membership request — ${record.reference}`,html:`<h2>Customer membership request</h2><p><strong>${escapeHtml(customer.name)}</strong> has requested: ${escapeHtml(record.description)}</p>`})});return response.ok}
+async function notify(env,customer,record){if(!env.RESEND_API_KEY||!env.BOOKING_FROM_EMAIL)return false;const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${env.RESEND_API_KEY}`,'content-type':'application/json','idempotency-key':`${record.reference}-membership-request`},body:JSON.stringify(await brandEmail(env,{from:env.BOOKING_FROM_EMAIL,to:['help@vipoap.co.uk'],subject:`Membership request — ${record.reference}`,html:`<h2>Customer membership request</h2><p><strong>${escapeHtml(customer.name)}</strong> has requested: ${escapeHtml(record.description)}</p>`},'care'))});return response.ok}
 export async function onRequestPost({request,env}){
   const session=await requireCustomer(request,env);if(!session)return Response.json({error:'Please sign in.'},{status:401});
   let body;try{body=await request.json()}catch{return Response.json({error:'Please check the request.'},{status:400})}
