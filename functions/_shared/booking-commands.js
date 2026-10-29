@@ -1,3 +1,4 @@
+import {planEngineerAssignment} from './booking-assignment.js';
 // Inactive command adapters. No live route calls these staged mutations.
 import {loadAdminBooking,loadCustomerBooking} from './booking-access.js';
 import {commitBookingChange} from './booking-transactions.js';
@@ -7,6 +8,7 @@ async function hash(value){const bytes=await crypto.subtle.digest('SHA-256',new 
 function fields(payload,allowed){return payload&&Object.getPrototypeOf(payload)===Object.prototype&&Object.keys(payload).every(key=>allowed.includes(key));}
 function text(value,max){if(typeof value!=='string'||value.length>max)throw failure('Please check the booking change.',400);return value.trim().replace(/[<>]/g,'');}
 function normalize(kind,payload){
+  if(kind==='hq-assign-engineer'){if(!fields(payload,['operatorId'])||typeof payload.operatorId!=='string'||!/^[-a-zA-Z0-9_]{1,80}$/.test(payload.operatorId))throw failure('Choose a valid engineer.',400);return{operatorId:payload.operatorId}}
   if(kind==='engineer-job-decline'){if(!fields(payload,['reason']))throw failure('Please check the decline reason.',400);return{reason:text(payload.reason??'',500)}}
   if(kind==='engineer-job-transition'){
     if(!fields(payload,['action'])||!['accepted','en-route','arrived','in-progress'].includes(payload.action))throw failure('Choose a valid engineer action.',400);
@@ -29,18 +31,20 @@ async function receipt(db,{requestId,bookingId,metadata}){
   return{bookingId,revision:prior.revision,reused:true};
 }
 export async function executeBookingCommand({request,env,bookingId,expectedRevision,requestId,kind,payload,now=new Date().toISOString()}){
-  if(!['set-admin-note','customer-appointment-request','engineer-job-transition','engineer-job-decline'].includes(kind))throw failure('Unsupported booking change.',400);
+  if(!['set-admin-note','customer-appointment-request','engineer-job-transition','engineer-job-decline','hq-assign-engineer'].includes(kind))throw failure('Unsupported booking change.',400);
   const staffCommand=kind!=='customer-appointment-request';
-  const booking=staffCommand?await loadAdminBooking({request,env,bookingId,permission:'manage_calls'}):await loadCustomerBooking({request,env,bookingId});
+  const booking=staffCommand?await loadAdminBooking({request,env,bookingId,permission:kind==='hq-assign-engineer'?'manage_operations':'manage_calls'}):await loadCustomerBooking({request,env,bookingId});
   if(!Number.isSafeInteger(expectedRevision)||expectedRevision<1||expectedRevision>=Number.MAX_SAFE_INTEGER||typeof requestId!=='string'||!requestPattern.test(requestId)||typeof now!=='string'||!Number.isFinite(Date.parse(now)))throw failure('A valid booking revision and unique request are required.',400);
   if(kind.startsWith('engineer-job-')&&booking.context.role!=='operator')throw failure('An assigned engineer session is required.',403);
+  if(kind==='hq-assign-engineer'&&booking.context.role==='operator')throw failure('HQ assignment access is required.',403);
   const input=normalize(kind,payload),id=requestId.toLowerCase(),context=booking.context;
   const actor=staffCommand?['admin',context.role,context.operatorId,context.email]:['customer',context.customerId];
   const metadata={version:1,actor:await hash(actor),kind,inputHash:await hash({bookingId,expectedRevision,kind,payload:input})},db=env.VIPOAP_BOOKING_DB;
   const prior=await receipt(db,{requestId:id,bookingId,metadata});if(prior)return prior;
   if(booking.revision!==expectedRevision)throw failure('This booking changed. Refresh before trying again.',409);
   const snapshot=booking.snapshot,timestamp=new Date(now).toISOString();let patch,events,reservation;
-  if(kind==='set-admin-note'){
+  if(kind==='hq-assign-engineer'){const assignment=await planEngineerAssignment({env,booking,operatorId:input.operatorId,now:timestamp});patch=assignment.patch;events=assignment.events.map(event=>({...event,payload:{...event.payload,requestId:id,actor:metadata.actor}}));reservation=assignment.reservation;
+  }else if(kind==='set-admin-note'){
     patch={adminNotes:input.note};events=[{kind:'booking-admin-note-recorded',payload:{bookingId,requestId:id,actor:metadata.actor}}];
   }else if(kind==='engineer-job-transition'){
     const closed=['completed','cancelled','declined','safety-stopped','awaiting-final-settlement','partially-resolved','unresolved','follow-up-booked'];
@@ -65,7 +69,7 @@ export async function executeBookingCommand({request,env,bookingId,expectedRevis
     const reference=`REQ-${id}`;patch={customerRequestStatus:'received',customerRequestType:input.requestType,customerRequestDetails:input.details,customerRequestReference:reference,customerRequestAt:timestamp};
     events=[{kind:'customer-appointment-requested',payload:{bookingId,requestId:id,requestType:input.requestType,reference}}];
   }
-  try{return await commitBookingChange(db,{bookingId,expectedRevision,requestId:id,snapshot:{...snapshot,...patch,updatedAt:timestamp},events,...(reservation===null?{reservation:null}:{}),commandMetadata:metadata});}
+  try{return await commitBookingChange(db,{bookingId,expectedRevision,requestId:id,snapshot:{...snapshot,...patch,updatedAt:timestamp},events,...(reservation===undefined?{}:{reservation}),commandMetadata:metadata});}
   catch(error){
     // Concurrent identical commands may build different server timestamps. Their
     // durable command identity, rather than the timestamp, determines replay.
