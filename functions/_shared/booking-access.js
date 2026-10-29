@@ -3,7 +3,7 @@ import {adminContext,canAccessTerritory} from './admin-auth.js';
 import {hasPermission} from './permissions.js';
 import {requireCustomer} from './customer-auth.js';
 const fail=(message,status)=>Object.assign(new Error(message),{status});
-async function readBooking(env,bookingId){
+export async function readBooking(env,bookingId){
   if(typeof bookingId!=='string'||!bookingId.startsWith('booking:')||bookingId.length>160)throw fail('Booking not found.',404);
   if(!env.VIPOAP_BOOKING_DB)throw fail('Transactional booking storage is unavailable.',503);
   const row=await env.VIPOAP_BOOKING_DB.prepare('SELECT snapshot_json,revision FROM booking_transactions WHERE id=?').bind(bookingId).first();

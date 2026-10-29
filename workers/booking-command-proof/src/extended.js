@@ -1,3 +1,4 @@
+import {issueBookingApprovalLink,readBookingApprovalQuote} from '../../../functions/_shared/booking-approval-links.js';
 // Synthetic-only expanded runtime checks; receives an in-memory identity store, never production KV.
 import {executeBookingCommand} from '../../../functions/_shared/booking-commands.js';
 import {commitBookingChange} from '../../../functions/_shared/booking-transactions.js';
@@ -22,7 +23,13 @@ export async function extendedProof({db,local,request,sessions,adminKey,admin,ru
  const approvals=await Promise.all([command(bookingId,6,'customer-decide-additional-time',{approvalId:quote.approvalId,decision:'approved'},{requestId:decisionId}),command(bookingId,6,'customer-decide-additional-time',{approvalId:quote.approvalId,decision:'approved'},{requestId:decisionId})]);
  const approved=await read(bookingId),slot=await db.prepare('SELECT end_ms FROM booking_slot_reservations WHERE booking_id=?').bind(bookingId).first();
  assert(approvals.filter(r=>r.reused).length===1&&approved.snapshot.additionalAmount===30&&approved.snapshot.additionalTime.length===1&&slot.end_ms===1820000,'overtime-approval-once-and-slot-extended');
- const safety=await command(bookingId,7,'report-booking-safety',{concernType:'Synthetic concern',severity:'high',description:'PRIVATE-QA-DESCRIPTION',immediateAction:'PRIVATE-QA-ACTION',currentlySafe:false,stopWork:true});
+ local.BOOKING_APPROVAL_LINK_KEYS=JSON.stringify({active:'synthetic-proof',keys:{'synthetic-proof':'A'.repeat(43)}});
+ await command(bookingId,7,'engineer-request-additional-time',{blocks:1});
+ const link=await issueBookingApprovalLink({request,env:local,bookingId,now}),linkQuote=await readBookingApprovalQuote({env:local,token:link.token,now});assert(linkQuote.charge===30&&linkQuote.minutes===30,'signed-link-quote-without-login');
+ denied=false;try{await readBookingApprovalQuote({env:local,token:link.token+'!',now})}catch(error){denied=error.status===404}assert(denied,'tampered-signed-link-rejected');
+ const linkId=crypto.randomUUID(),linkDecision=()=>command(bookingId,8,'customer-link-decide-additional-time',{decision:'declined'},{request:new Request('https://example.test'),approvalToken:link.token,requestId:linkId});
+ const linkResults=await Promise.all([linkDecision(),linkDecision()]),afterLink=await read(bookingId);assert(linkResults.filter(row=>row.reused).length===1&&afterLink.snapshot.additionalAmount===30&&!afterLink.snapshot.pendingAdditionalTimeApproval,'signed-link-decline-once-without-extra-charge');
+ const safety=await command(bookingId,9,'report-booking-safety',{concernType:'Synthetic concern',severity:'high',description:'PRIVATE-QA-DESCRIPTION',immediateAction:'PRIVATE-QA-ACTION',currentlySafe:false,stopWork:true});
  const stopped=await read(bookingId);assert(stopped.snapshot.status==='safety-stopped'&&stopped.snapshot.paymentStatus==='review'&&!JSON.stringify(stopped.snapshot).includes('PRIVATE-QA'),'private-safety-stop-atomic-snapshot');
  const events=await db.prepare('SELECT payload_json FROM booking_outbox WHERE booking_id=?').bind(bookingId).all();assert(events.results.every(row=>!row.payload_json.includes('PRIVATE-QA')),'private-report-absent-from-outbox');
  denied=false;try{await loadBookingSafetyCase({request,env:local,incidentId:safety.incidentId})}catch(error){denied=error.status===403}assert(denied,'reporter-cannot-read-restricted-case');
@@ -36,7 +43,7 @@ export async function extendedProof({db,local,request,sessions,adminKey,admin,ru
  assert(denied&&(await loadBookingSafetyCase({request,env:local,incidentId:safety.incidentId})).revision===1,'review-audit-failure-rolls-back-case');
  const reviews=await Promise.all([review(),review()]);assert(reviews.filter(row=>row.reused).length===1,'concurrent-case-review-once');
  const history=await listBookingSafetyReviews({request,env:local,incidentId:safety.incidentId});assert(history.items.length===1&&history.items[0].actorId==='qa-manager-'+runId,'actual-manager-private-history');
- const afterReview=await read(bookingId);assert(afterReview.revision===8&&afterReview.snapshot.status==='safety-stopped'&&afterReview.snapshot.paymentStatus==='review','case-review-does-not-resume-or-charge');
+ const afterReview=await read(bookingId);assert(afterReview.revision===10&&afterReview.snapshot.status==='safety-stopped'&&afterReview.snapshot.paymentStatus==='review','case-review-does-not-resume-or-charge');
  sessions.set(adminKey,admin);
  const declineId=await create('decline',base,{engineerId:operatorId,startMs:3000000,endMs:3100000});await command(declineId,1,'engineer-job-decline',{reason:'Synthetic decline'});
  const declined=await read(declineId);assert(!declined.snapshot.operatorId&&declined.snapshot.bookingStatus==='unfilled'&&!(await db.prepare('SELECT booking_id FROM booking_slot_reservations WHERE booking_id=?').bind(declineId).first()),'decline-releases-slot-atomically');
