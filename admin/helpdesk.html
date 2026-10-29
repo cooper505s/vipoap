@@ -20,13 +20,13 @@
 <body data-page-permission="manage_operations" data-workspace="admin">
 <main class="shell">
 <section id="login" class="card login"><img src="../assets/vipoap-os-heart-blue.png" alt="VIPOAP" width="110"><h1>Admin helpdesk</h1><p class="muted">Sign in to view and manage every ticket.</p><div class="field"><label for="password">Admin password</label><input id="password" type="password" autocomplete="current-password"></div><button class="btn primary" id="loginBtn">Sign in</button><p id="loginStatus" aria-live="polite"></p></section>
-<section id="os" class="hidden"><header class="top card os-page-header"><a class="os-brand" href="/admin/os" aria-label="VIPOAP OS admin overview"><img src="../assets/vipoap-os-heart-blue.png" alt=""><div><h1>VIPOAP OS</h1><p class="muted">Administration portal</p></div></a><div class="os-header-controls"><span class="os-portal-badge">Secure workspace</span><span class="os-install-slot" aria-live="polite"></span></div></header><section class="os-page-heading"><div><h2>Admin helpdesk</h2><p class="muted">All bookings, customer requests, escalations, repeat calls and follow-ups in one place</p></div><div class="actions"><a class="btn secondary" href="os">Admin overview</a></div></section></section>
+<section id="os" class="hidden"><header class="top card os-page-header"><a class="os-brand" href="/admin/os" aria-label="VIPOAP OS admin overview"><img src="../assets/vipoap-os-heart-blue.png" alt=""><div><h1>VIPOAP OS</h1><p class="muted">Administration portal</p></div></a><div class="os-header-controls"><span class="os-portal-badge">Secure workspace</span><span class="os-install-slot" aria-live="polite"></span></div></header><section class="os-page-heading"><div><h2>Helpdesk</h2><p class="muted">All bookings, customer requests, escalations, repeat calls and follow-ups in one place</p></div><div class="actions"><a class="btn secondary" href="os">Admin overview</a></div></section></section>
 </main>
 <script>
 let adminPassword=sessionStorage.getItem('vipoapAdmin')||'',adminSession=sessionStorage.getItem('vipoapAdminSession')||'';const $=id=>document.getElementById(id),headers=()=>({'content-type':'application/json','x-admin-password':adminPassword,'x-admin-session':adminSession});async function check(){const response=await fetch('/api/admin/tickets',{headers:headers()}),data=await response.json();if(!response.ok)throw Error(data.error||'Sign-in failed.');return data}async function signIn(){adminPassword=$('password').value;$('loginStatus').textContent='Signing in…';try{await check();sessionStorage.setItem('vipoapAdmin',adminPassword);$('login').classList.add('hidden');$('os').classList.remove('hidden')}catch(error){$('loginStatus').textContent=error.message}}$('loginBtn').onclick=signIn;$('password').onkeydown=event=>{if(event.key==='Enter')signIn()};(async()=>{if(adminPassword||adminSession)try{await check();$('login').classList.add('hidden');$('os').classList.remove('hidden')}catch{sessionStorage.removeItem('vipoapAdmin');sessionStorage.removeItem('vipoapAdminSession')}})();
 </script>
 <script src="email-login.js?v=6"></script>
-<script src="ticket-workspace.js?v=5"></script>
-<script src="mobile-nav.js?v=8"></script>
+<script src="ticket-workspace.js?v=6"></script>
+<script src="mobile-nav.js?v=9"></script>
 </body>
 </html>
