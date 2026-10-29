@@ -1,3 +1,4 @@
+import {brandEmail} from '../_shared/staff-signatures.js';
 import { ensureCustomer, findCustomer } from "../_shared/customers.js";
 import { initialBookingState } from "../_shared/booking-state.js";
 import { takeRateLimit } from "../_shared/rate-limit.js";
@@ -75,7 +76,7 @@ async function sendMessage(env, payload, key) {
       "content-type": "application/json",
       "idempotency-key": key,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(await brandEmail(env,payload,'operations')),
   });
   if (!response.ok)
     throw new Error(`Email delivery failed with status ${response.status}`);
