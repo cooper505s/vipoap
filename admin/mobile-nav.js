@@ -3,7 +3,7 @@
     document.body.classList.add('software-workspace');
     const main=document.querySelector('main');if(main)main.classList.add('workspace-main');
     const css=document.createElement('link');css.rel='stylesheet';css.href='/admin/workspace.css?v=7';document.head.append(css);
-    const shell=document.createElement('script');shell.src='/admin/workspace.js?v=8';document.body.append(shell);
+    const shell=document.createElement('script');shell.src='/admin/workspace.js?v=9';document.body.append(shell);
     return;
   }
   const icon=document.querySelector('link[rel~="icon"]')||document.createElement('link');
