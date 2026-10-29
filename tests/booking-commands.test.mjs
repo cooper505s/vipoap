@@ -1,3 +1,4 @@
+import {reviewBookingSafetyCase,listBookingSafetyReviews} from '../functions/_shared/booking-safety-review.js';
 import {loadBookingSafetyCase,listBookingSafetyCases} from '../functions/_shared/booking-safety.js';
 import {ukAppointmentInterval} from '../functions/_shared/booking-time.js';
 import test from 'node:test';
@@ -201,3 +202,33 @@ test('safety command requires its staged migration and does not mutate when stor
  assert.equal(queried,false);
  s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:[]});assert.deepEqual(await listBookingSafetyCases({request:s.request,env:s.env}),{items:[],nextCursor:null});assert.equal(queried,false);
  });
+
+async function reviewSetup(){const s=await setup(),report=await s.command({kind:'report-booking-safety',payload:safetyInput});s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['andover']});const review=(patch={})=>reviewBookingSafetyCase({request:s.request,env:s.env,incidentId:report.incidentId,expectedRevision:1,requestId:crypto.randomUUID(),changes:{status:'triaged',note:'Synthetic manager review'},...patch});return {...s,incidentId:report.incidentId,review}}
+test('case review atomically records actual manager, note and revision without resuming work or changing payment',async()=>{
+ const s=await reviewSetup(),before=s.saved().snapshot_json,report=s.sql.prepare('SELECT report_json FROM booking_safety_cases').get().report_json;
+ assert.deepEqual(await s.review(),{incidentId:s.incidentId,revision:2,reused:false});
+ const row=s.sql.prepare('SELECT * FROM booking_safety_cases').get(),audit=s.sql.prepare('SELECT * FROM booking_safety_reviews').get();assert.equal(row.status,'triaged');assert.equal(row.revision,2);assert.equal(audit.actor_id,'manager');assert.equal(audit.prior_status,'new');assert.equal(audit.note,'Synthetic manager review');assert.equal(row.report_json,report);assert.equal(s.saved().snapshot_json,before);assert.equal(s.record().status,'safety-stopped');assert.equal(s.record().paymentStatus,'review');assert.equal(s.count('booking_slot_reservations'),1);
+ const read=await loadBookingSafetyCase({request:s.request,env:s.env,incidentId:s.incidentId});assert.equal(read.revision,2);
+});
+test('concurrent identical case reviews save once and replay their original receipt after later updates',async()=>{
+ const s=await reviewSetup(),requestId=crypto.randomUUID(),results=await Promise.all([s.review({requestId}),s.review({requestId})]);assert.equal(results.filter(r=>r.reused).length,1);assert.equal(s.count('booking_safety_reviews'),1);
+ await s.review({expectedRevision:2,changes:{status:'resolved',note:'Synthetic resolution'}});assert.equal((await s.review({requestId})).revision,2);
+ await assert.rejects(s.review({requestId,changes:{status:'closed',note:'Different'}}),{status:409});
+ s.sessions.set(s.adminKey,{role:'admin',operatorId:'other-manager',territoryIds:['andover']});await assert.rejects(s.review({requestId}),{status:409});
+});
+test('competing case reviews cannot overwrite one another and history stays scoped and paginated',async()=>{
+ const s=await reviewSetup(),results=await Promise.allSettled([s.review(),s.review({changes:{status:'action-required',note:'Alternative review'}})]);assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.find(r=>r.status==='rejected').reason.status,409);assert.equal(s.count('booking_safety_reviews'),1);
+ await s.review({expectedRevision:2,changes:{status:'awaiting-information',note:'Follow-up'}});
+ const first=await listBookingSafetyReviews({request:s.request,env:s.env,incidentId:s.incidentId,limit:1});assert.equal(first.items[0].revision,2);assert.equal(first.nextRevision,2);assert.equal(first.items[0].actorId,'manager');const next=await listBookingSafetyReviews({request:s.request,env:s.env,incidentId:s.incidentId,afterRevision:first.nextRevision,limit:1});assert.equal(next.items[0].revision,3);assert.equal(next.nextRevision,null);
+ s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['elsewhere']});await assert.rejects(s.review(),{status:404});await assert.rejects(listBookingSafetyReviews({request:s.request,env:s.env,incidentId:s.incidentId}),{status:404});
+});
+test('failed audit insertion rolls case status and revision back together',async()=>{
+ const s=await reviewSetup();s.sql.exec("CREATE TRIGGER fail_safety_review BEFORE INSERT ON booking_safety_reviews BEGIN SELECT RAISE(ABORT,'synthetic failure'); END");await assert.rejects(s.review(),{status:503});const row=s.sql.prepare('SELECT * FROM booking_safety_cases').get();assert.equal(row.status,'new');assert.equal(row.revision,1);assert.equal(row.last_review_id,null);assert.equal(s.count('booking_safety_reviews'),0);
+});
+test('review permissions and strict inputs reject spoofing or malformed requests before updates',async()=>{
+ const s=await reviewSetup();for(const patch of [{expectedRevision:0},{expectedRevision:'1'},{requestId:'bad'},{changes:{status:'triaged',note:''}},{changes:{status:'unknown',note:'Note'}},{changes:{status:'triaged',note:'Note',actorId:'spoof'}},{changes:{status:'triaged',note:'x'.repeat(2001)}}])await assert.rejects(s.review(patch),{status:400});
+ s.sessions.set(s.adminKey,{role:'operator',operatorId:'engineer-one',territoryIds:['andover']});await assert.rejects(s.review(),{status:403});assert.equal(s.count('booking_safety_reviews'),0);
+});
+test('review retries do not bypass revoked scope and missing review schema makes no changes',async()=>{
+ const s=await reviewSetup(),requestId=crypto.randomUUID();await s.review({requestId});s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['elsewhere']});await assert.rejects(s.review({requestId}),{status:404});s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['andover']});s.sql.exec('DROP TABLE booking_safety_reviews');await assert.rejects(s.review({expectedRevision:2}),{status:503});assert.equal(s.sql.prepare('SELECT revision FROM booking_safety_cases').get().revision,2);
+});
