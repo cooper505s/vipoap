@@ -1,4 +1,4 @@
-import {loadBookingSafetyCase} from '../functions/_shared/booking-safety.js';
+import {loadBookingSafetyCase,listBookingSafetyCases} from '../functions/_shared/booking-safety.js';
 import {ukAppointmentInterval} from '../functions/_shared/booking-time.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -179,4 +179,25 @@ test('safety command requires its staged migration and does not mutate when stor
  let queried=false;s.env.VIPOAP_BOOKING_DB={prepare(){queried=true;throw new Error('Unexpected query')}};
  for(const incidentId of ['incident:'+'-'.repeat(36),'incident:00000000-0000-1000-8000-000000000000'])await assert.rejects(loadBookingSafetyCase({request:s.request,env:s.env,incidentId}),{status:404});
  assert.equal(queried,false);
+ });
+
+ test('safety queue scopes before pagination, orders ties and keeps private reports out of list results',async()=>{
+ const s=await setup(),ids=[];
+ for(let i=0;i<5;i++){const result=await s.command({kind:'report-booking-safety',expectedRevision:i+1,payload:{...safetyInput,stopWork:false}});ids.push(result.incidentId)}
+ s.sql.prepare('UPDATE booking_safety_cases SET created_at=?').run('2026-10-29T14:00:00.000Z');
+ s.sql.prepare('UPDATE booking_safety_cases SET territory_id=? WHERE id=?').run('elsewhere',ids[0]);
+ s.sql.prepare('UPDATE booking_safety_cases SET status=? WHERE id=?').run('triaged',ids[1]);
+ s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['andover']});
+ const expected=ids.slice(1).sort().reverse(),seen=[];let cursor=null;
+ do{const page=await listBookingSafetyCases({request:s.request,env:s.env,limit:2,cursor});seen.push(...page.items.map(row=>row.id));assert.doesNotMatch(JSON.stringify(page),/Synthetic private|reporterId|description|immediateAction/);cursor=page.nextCursor}while(cursor);
+ assert.deepEqual(seen,expected);
+ const filtered=await listBookingSafetyCases({request:s.request,env:s.env,status:'triaged'});assert.deepEqual(filtered.items.map(row=>row.id),[ids[1]]);
+ s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['*']});assert.equal((await listBookingSafetyCases({request:s.request,env:s.env})).items.length,5);
+ });
+ test('safety queue denies reporters and rejects malformed paging without reading cases',async()=>{
+ const s=await setup();await assert.rejects(listBookingSafetyCases({request:s.request,env:s.env}),{status:403});
+ s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['andover']});let queried=false;s.env.VIPOAP_BOOKING_DB={prepare(){queried=true;throw new Error('Unexpected query')}};
+ for(const args of [{limit:0},{limit:101},{limit:'2'},{status:'unknown'},{cursor:{}},{cursor:{createdAt:'bad',id:'bad'}},{cursor:{createdAt:'2026-10-28',id:'incident:'+crypto.randomUUID(),extra:true}}])await assert.rejects(listBookingSafetyCases({request:s.request,env:s.env,...args}),{status:400});
+ assert.equal(queried,false);
+ s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:[]});assert.deepEqual(await listBookingSafetyCases({request:s.request,env:s.env}),{items:[],nextCursor:null});assert.equal(queried,false);
  });

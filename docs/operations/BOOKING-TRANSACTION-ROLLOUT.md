@@ -133,3 +133,8 @@ With an explicit stop request, all work-status fields become safety-stopped and 
 Migration0014 creates `booking_safety_cases` with booking/mutation foreign keys and scoped status indexing. It has NOT been applied to preview or production. Existing commands remain compatible without0014; safety commands fail closed without it. The private reader requires `manage_incidents` plus case-territory access before returning the report. The existing KV safety API, standalone reporting and case-management workflow have not cut over.
 
 Remaining gates include actual D1 proof of this new case path, scoped queue/triage adapters, standalone-case/import compatibility, review of case retention/access/audit policy and every-writer/payment coordination. Intake expiry cleanup does not cover this table. No provider is called or incident delivered by the internal event, and no live route imports this code. Do not apply production schema or activate it as a completed safety migration.
+
+
+### Restricted safety queue (staged)
+
+The queue reader applies authenticated territory and optional status filters in SQL before fetching a bounded page (1–100, default50). Keyset pagination orders by creation timestamp and case ID, including timestamp ties. It returns case metadata only; full report text remains behind the individually scoped reader. Invalid paging input is rejected before querying; no-territory managers receive no records. Blank stored scopes never fall back to Andover. The queue is inactive: no live route imports it, case triage/update and audit policy remain unfinished, and migration0014 is still unapplied.
