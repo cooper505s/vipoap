@@ -62,7 +62,7 @@ window.vipoapWorkspaceReady=(async () => {
         const main=document.querySelector('main');main.replaceChildren();const title=document.createElement('h1');title.textContent='Access restricted';const text=document.createElement('p');text.textContent='Your account does not have access to this workspace.';main.append(title,text);document.body.classList.add('workspace-ready');return;
       }
       if(!data.territoryIds?.includes('*'))document.querySelectorAll('[data-global-hq]').forEach(element=>element.hidden=true);
-      const {enhancePage}=await import('/admin/page-layouts.js?v=1');enhancePage(data);const {enhanceOperations}=await import('/admin/operations-layout.js?v=1');enhanceOperations(data);bar.querySelector('.workspace-context small').textContent=area&&area!=='Workspace'&&area.toLowerCase()!==String(document.querySelector('main .page-heading h1,main .os-page-heading h1')?.textContent||'').toLowerCase()?' / '+area:'';
+      const {enhancePage}=await import('/admin/page-layouts.js?v=2');enhancePage(data);const {enhanceOperations}=await import('/admin/operations-layout.js?v=1');enhanceOperations(data);bar.querySelector('.workspace-context small').textContent=area&&area!=='Workspace'&&area.toLowerCase()!==String(document.querySelector('main .page-heading h1,main .os-page-heading h1')?.textContent||'').toLowerCase()?' / '+area:'';
       document.body.classList.add('workspace-ready');document.dispatchEvent(new CustomEvent('workspace-ready',{detail:data}));return data;
     } catch {const main=document.querySelector('main');main.textContent='We could not open the workspace. Please refresh to try again.';document.body.classList.add('workspace-ready');}
   }
