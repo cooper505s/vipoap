@@ -1,3 +1,4 @@
+import {loadCustomerAdditionalTimeRequest} from '../functions/_shared/booking-additional-time.js';
 import {reviewBookingSafetyCase,listBookingSafetyReviews} from '../functions/_shared/booking-safety-review.js';
 import {loadBookingSafetyCase,listBookingSafetyCases} from '../functions/_shared/booking-safety.js';
 import {ukAppointmentInterval} from '../functions/_shared/booking-time.js';
@@ -231,4 +232,43 @@ test('review permissions and strict inputs reject spoofing or malformed requests
 });
 test('review retries do not bypass revoked scope and missing review schema makes no changes',async()=>{
  const s=await reviewSetup(),requestId=crypto.randomUUID();await s.review({requestId});s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['elsewhere']});await assert.rejects(s.review({requestId}),{status:404});s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['andover']});s.sql.exec('DROP TABLE booking_safety_reviews');await assert.rejects(s.review({expectedRevision:2}),{status:503});assert.equal(s.sql.prepare('SELECT revision FROM booking_safety_cases').get().revision,2);
+});
+
+async function additionalSetup(){const s=await setup();s.sql.prepare('UPDATE booking_transactions SET snapshot_json=? WHERE id=?').run(JSON.stringify({...s.snapshot,jobStatus:'in-progress',supportType:'Home visit',paymentMethod:'online'}),s.bookingId);const requestMore=(patch={})=>s.command({kind:'engineer-request-additional-time',payload:{blocks:2},...patch});await requestMore();const approvalId=s.record().pendingAdditionalTimeApproval;const decide=(patch={})=>s.command({kind:'customer-decide-additional-time',expectedRevision:2,payload:{approvalId,decision:'approved'},now:'2026-10-28T17:01:00Z',...patch});return {...s,requestMore,decide,approvalId}}
+test('additional-time request freezes prices and customer approval atomically consumes it and extends the slot',async()=>{
+ const s=await additionalSetup(),pending=s.record().pendingAdditionalTimeRequest;assert.equal(pending.chargePence,6000);assert.equal(pending.entitlementPence,4000);assert.equal(s.record().additionalAmount,undefined);assert.equal(s.sql.prepare('SELECT end_ms FROM booking_slot_reservations').get().end_ms,2000);
+ s.sessions.set('config:platform-rules',{version:'v6-member-service-discounts',prices:{homeAdditional30:99},engineerEntitlements:{homeAdditional30:88}});
+ await s.decide();const saved=s.record();assert.equal(saved.additionalAmount,60);assert.equal(saved.providerAdditionalEntitlementPence,4000);assert.equal(saved.additionalTime.length,1);assert.equal(saved.additionalTime[0].approvalMethod,'customer-account');assert.equal(saved.pendingAdditionalTimeApproval,'');assert.equal(saved.additionalTimeApprovals[0].status,'approved');assert.equal(saved.price,s.snapshot.price);assert.equal(saved.paymentStatus,'additional-payment-due');assert.equal(s.sql.prepare('SELECT end_ms FROM booking_slot_reservations').get().end_ms,3602000);
+});
+test('declining extra time clears its pending request without changing payment or reservation',async()=>{
+ const s=await additionalSetup();await s.decide({payload:{approvalId:s.approvalId,decision:'declined'}});assert.equal(s.record().paymentStatus,'prepaid');assert.equal(s.record().additionalAmount,undefined);assert.equal(s.record().additionalTimeApprovals[0].status,'declined');assert.equal(s.sql.prepare('SELECT end_ms FROM booking_slot_reservations').get().end_ms,2000);
+});
+test('identical customer approval retries consume once and different approval decisions race safely',async()=>{
+ const s=await additionalSetup(),requestId=crypto.randomUUID(),results=await Promise.all([s.decide({requestId}),s.decide({requestId,now:'2026-10-28T17:02:00Z'})]);assert.equal(results.filter(r=>r.reused).length,1);assert.equal(s.record().additionalAmount,60);assert.equal(s.record().additionalTime.length,1);await s.command({expectedRevision:3,payload:{note:'Later note'}});assert.equal((await s.decide({requestId})).revision,3);
+ const t=await additionalSetup(),race=await Promise.allSettled([t.decide(),t.decide({payload:{approvalId:t.approvalId,decision:'declined'}})]);assert.equal(race.filter(r=>r.status==='fulfilled').length,1);assert.equal(race.find(r=>r.status==='rejected').reason.status,409);assert.equal(t.record().additionalTimeApprovals.length,1);
+});
+test('additional-time slot conflict and event failure roll back consumption, money and reservation together',async()=>{
+ const s=await additionalSetup(),before=s.saved().snapshot_json;s.sql.prepare('INSERT INTO booking_transactions VALUES (?,?,1,?,?)').run('booking:other','{}','fixture','2026-10-28');s.sql.prepare('INSERT INTO booking_slot_reservations VALUES (?,?,?,?)').run('booking:other','engineer-one',2500,5000);await assert.rejects(s.decide(),{status:409});assert.equal(s.saved().snapshot_json,before);assert.equal(s.count('booking_mutations'),1);
+ s.sql.prepare('DELETE FROM booking_slot_reservations WHERE booking_id=?').run('booking:other');s.sql.exec("CREATE TRIGGER reject_additional_event BEFORE INSERT ON booking_outbox WHEN NEW.kind='booking-additional-time-decided' BEGIN SELECT RAISE(ABORT,'synthetic event failure'); END");await assert.rejects(s.decide());assert.equal(s.saved().snapshot_json,before);assert.equal(s.count('booking_mutations'),1);assert.equal(s.sql.prepare('SELECT end_ms FROM booking_slot_reservations WHERE booking_id=?').get(s.bookingId).end_ms,2000);
+});
+test('additional-time requests require assigned active engineer and decisions require owning customer',async()=>{
+ const s=await additionalSetup();s.sessions.set(s.customerKey,{customerId:'customer:other',expiresAt:new Date(Date.now()+3600000).toISOString()});await assert.rejects(s.decide(),{status:404});s.sessions.set(s.adminKey,{role:'admin',operatorId:'manager',territoryIds:['andover']});await assert.rejects(s.requestMore({expectedRevision:2}),{status:403});assert.equal(s.saved().revision,2);
+ const t=await additionalSetup();t.sql.prepare('UPDATE booking_transactions SET snapshot_json=? WHERE id=?').run(JSON.stringify({...t.record(),status:'safety-stopped',paymentStatus:'review'}),t.bookingId);await assert.rejects(t.decide(),{status:409});
+});
+test('expired and superseded approval requests cannot be consumed and replacement preserves expiry history',async()=>{
+ const s=await additionalSetup();await assert.rejects(s.decide({now:'2026-10-28T18:00:00Z'}),{status:409});await assert.rejects(s.requestMore({expectedRevision:2}),{status:409});await s.requestMore({expectedRevision:2,now:'2026-10-28T18:01:00Z'});assert.equal(s.record().additionalTimeApprovals[0].status,'expired');assert.notEqual(s.record().pendingAdditionalTimeApproval,s.approvalId);await assert.rejects(s.decide({expectedRevision:3,now:'2026-10-28T18:02:00Z'}),{status:409});
+});
+test('additional-time strict pricing, history, count and caller fields fail without money mutation',async()=>{
+ const s=await setup();s.sql.prepare('UPDATE booking_transactions SET snapshot_json=? WHERE id=?').run(JSON.stringify({...s.snapshot,jobStatus:'in-progress',supportType:'Home visit',paymentMethod:'online'}),s.bookingId);
+ for(const payload of [{blocks:0},{blocks:7},{blocks:'2'},{blocks:1,charge:0}])await assert.rejects(s.command({kind:'engineer-request-additional-time',payload}),{status:400});s.sessions.set('config:platform-rules',{version:'v6-member-service-discounts',prices:{homeAdditional30:-1}});await assert.rejects(s.command({kind:'engineer-request-additional-time',payload:{blocks:1}}),{status:409});assert.equal(s.saved().revision,1);
+ const t=await additionalSetup();t.sql.prepare('UPDATE booking_transactions SET snapshot_json=? WHERE id=?').run(JSON.stringify({...t.record(),additionalAmount:'60'}),t.bookingId);await assert.rejects(t.decide(),{status:409});assert.equal(t.saved().revision,2);
+});
+
+test('customer additional-time projection exposes quote but not engineer entitlement, identity or full booking',async()=>{
+ const s=await additionalSetup(),view=await loadCustomerAdditionalTimeRequest({request:s.request,env:s.env,bookingId:s.bookingId,now:'2026-10-28T17:01:00Z'});assert.equal(view.charge,60);assert.equal(view.minutes,60);assert.equal(view.revision,2);assert.doesNotMatch(JSON.stringify(view),/entitlement|engineer-one|synthetic@example|adminNotes/);
+ s.sessions.set(s.customerKey,{customerId:'customer:other',expiresAt:new Date(Date.now()+3600000).toISOString()});await assert.rejects(loadCustomerAdditionalTimeRequest({request:s.request,env:s.env,bookingId:s.bookingId}),{status:404});
+});
+test('remote additional-time quote and cash settlement use frozen service rates without charging a provider',async()=>{
+ const s=await setup();s.sql.prepare('UPDATE booking_transactions SET snapshot_json=? WHERE id=?').run(JSON.stringify({...s.snapshot,jobStatus:'in-progress',supportType:'Remote support',paymentMethod:'online',additionalAmount:10,providerAdditionalEntitlementPence:500}),s.bookingId);await s.command({kind:'engineer-request-additional-time',payload:{blocks:1}});const approvalId=s.record().pendingAdditionalTimeApproval;assert.equal(s.record().pendingAdditionalTimeRequest.chargePence,2000);await s.command({kind:'customer-decide-additional-time',expectedRevision:2,payload:{approvalId,decision:'approved'}});assert.equal(s.record().additionalAmount,30);assert.equal(s.record().providerAdditionalEntitlementPence,1900);assert.equal(s.record().paymentStatus,'additional-payment-due');
+ const cash=await additionalSetup();cash.sql.prepare('UPDATE booking_transactions SET snapshot_json=? WHERE id=?').run(JSON.stringify({...cash.record(),paymentMethod:'cash'}),cash.bookingId);await cash.decide();assert.equal(cash.record().paymentStatus,'cash-due');
 });

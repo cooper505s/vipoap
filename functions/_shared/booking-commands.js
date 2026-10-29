@@ -1,3 +1,4 @@
+import {planAdditionalTimeRequest,planAdditionalTimeDecision} from './booking-additional-time.js';
 import {planEngineerAssignment} from './booking-assignment.js';
 // Inactive command adapters. No live route calls these staged mutations.
 import {loadAdminBooking,loadCustomerBooking} from './booking-access.js';
@@ -8,6 +9,8 @@ async function hash(value){const bytes=await crypto.subtle.digest('SHA-256',new 
 function fields(payload,allowed){return payload&&Object.getPrototypeOf(payload)===Object.prototype&&Object.keys(payload).every(key=>allowed.includes(key));}
 function text(value,max){if(typeof value!=='string'||value.length>max)throw failure('Please check the booking change.',400);return value.trim().replace(/[<>]/g,'');}
 function normalize(kind,payload){
+  if(kind==='engineer-request-additional-time'){if(!fields(payload,['blocks'])||!Number.isInteger(payload.blocks)||payload.blocks<1||payload.blocks>6)throw failure('Choose between one and six additional half-hours.',400);return{blocks:payload.blocks}}
+  if(kind==='customer-decide-additional-time'){if(!fields(payload,['approvalId','decision'])||typeof payload.approvalId!=='string'||!/^additional-time-request:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(payload.approvalId)||!['approved','declined'].includes(payload.decision))throw failure('Choose a valid additional-time response.',400);return{approvalId:payload.approvalId,decision:payload.decision}}
   if(kind==='report-booking-safety'){
     if(!fields(payload,['concernType','severity','description','immediateAction','currentlySafe','stopWork'])||!['critical','high','medium','low'].includes(payload.severity)||typeof payload.currentlySafe!=='boolean'||typeof payload.stopWork!=='boolean')throw failure('Please check the safety report.',400);
     const concernType=text(payload.concernType,80),description=text(payload.description,2000),immediateAction=text(payload.immediateAction??'',2000);if(!concernType||!description)throw failure('Concern type and description are required.',400);
@@ -36,11 +39,11 @@ async function receipt(db,{requestId,bookingId,metadata}){
   return{bookingId,revision:prior.revision,reused:true};
 }
 export async function executeBookingCommand({request,env,bookingId,expectedRevision,requestId,kind,payload,now=new Date().toISOString()}){
-  if(!['set-admin-note','customer-appointment-request','engineer-job-transition','engineer-job-decline','hq-assign-engineer','report-booking-safety'].includes(kind))throw failure('Unsupported booking change.',400);
-  const staffCommand=kind!=='customer-appointment-request';
+  if(!['set-admin-note','customer-appointment-request','engineer-job-transition','engineer-job-decline','hq-assign-engineer','report-booking-safety','engineer-request-additional-time','customer-decide-additional-time'].includes(kind))throw failure('Unsupported booking change.',400);
+  const staffCommand=!['customer-appointment-request','customer-decide-additional-time'].includes(kind);
   const booking=staffCommand?await loadAdminBooking({request,env,bookingId,permission:kind==='hq-assign-engineer'?'manage_operations':kind==='report-booking-safety'?'report_incidents':'manage_calls'}):await loadCustomerBooking({request,env,bookingId});
   if(!Number.isSafeInteger(expectedRevision)||expectedRevision<1||expectedRevision>=Number.MAX_SAFE_INTEGER||typeof requestId!=='string'||!requestPattern.test(requestId)||typeof now!=='string'||!Number.isFinite(Date.parse(now)))throw failure('A valid booking revision and unique request are required.',400);
-  if(kind.startsWith('engineer-job-')&&booking.context.role!=='operator')throw failure('An assigned engineer session is required.',403);
+  if((kind.startsWith('engineer-job-')||kind==='engineer-request-additional-time')&&booking.context.role!=='operator')throw failure('An assigned engineer session is required.',403);
   if(kind==='hq-assign-engineer'&&booking.context.role==='operator')throw failure('HQ assignment access is required.',403);
   const input=normalize(kind,payload),id=requestId.toLowerCase(),context=booking.context;
   const actor=staffCommand?['admin',context.role,context.operatorId,context.email]:['customer',context.customerId];
@@ -49,7 +52,10 @@ export async function executeBookingCommand({request,env,bookingId,expectedRevis
   const prior=await receipt(db,{requestId:id,bookingId,metadata});if(prior)return result(prior);
   if(booking.revision!==expectedRevision)throw failure('This booking changed. Refresh before trying again.',409);
   const snapshot=booking.snapshot,timestamp=new Date(now).toISOString();let patch,events,reservation,safetyCase;
-  if(kind==='report-booking-safety'){
+  if(kind==='engineer-request-additional-time'||kind==='customer-decide-additional-time'){
+    const planned=kind==='engineer-request-additional-time'?await planAdditionalTimeRequest({env,snapshot,requestId:id,operatorId:context.operatorId,blocks:input.blocks,now:timestamp}):await planAdditionalTimeDecision({env,bookingId,snapshot,...input,now:timestamp});
+    patch=planned.patch;reservation=planned.reservation;events=planned.events.map(event=>({...event,payload:{...event.payload,bookingId,requestId:id,actor:metadata.actor}}));
+  }else if(kind==='report-booking-safety'){
     if(typeof snapshot.territoryId!=='string'||!snapshot.territoryId||snapshot.territoryId.length>80)throw failure('This appointment needs a verified territory before reporting.',409);
     if(context.role==='operator'&&[snapshot.operatorId,snapshot.assignedEngineerId].some(value=>value&&value!==context.operatorId))throw failure('Booking not found.',404);
     if(input.stopWork&&([snapshot.status,snapshot.bookingStatus,snapshot.jobStatus].some(state=>['completed','cancelled','declined','safety-stopped','awaiting-final-settlement','partially-resolved','unresolved','follow-up-booked'].includes(state))||['refunded','refund-pending'].includes(snapshot.paymentStatus)))throw failure('This appointment has already ended or needs payment review. Submit a report without stopping work.',409);
