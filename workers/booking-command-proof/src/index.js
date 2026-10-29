@@ -1,3 +1,4 @@
+import {extendedProof} from './extended.js';
 // Manual, synthetic-only command proof. No public trigger or provider access.
 import {executeBookingCommand} from '../../../functions/_shared/booking-commands.js';
 import {commitBookingChange} from '../../../functions/_shared/booking-transactions.js';
@@ -7,7 +8,9 @@ export default {
   async scheduled(_event,env){
     const db=env.VIPOAP_TEST_DB;if(!db)throw Error('Preview test binding required.');
     if(!(await db.prepare("SELECT id FROM booking_transactions WHERE id='qa-foundation-one-20261028'").first()))throw Error('Preview fixture marker required.');
-    await db.prepare('SELECT command_json FROM booking_mutations LIMIT 1').all();
+    await db.prepare('SELECT command_json FROM booking_mutations LIMIT 0').all();
+    await db.prepare('SELECT report_json,revision,review_token FROM booking_safety_cases LIMIT 0').all();
+    await db.prepare('SELECT actor_hash,input_hash FROM booking_safety_reviews LIMIT 0').all();
     const runId=crypto.randomUUID(),bookingId=`booking:qa-command-${runId}`,operatorId=`qa-engineer-${runId}`,customerId=`customer:qa-${runId}`,token=`qa-admin-${runId}`,customerToken=`qa-customer-${runId}`,sessions=new Map(),checks=[];
     const adminKey=`admin-session:${await digest(token)}`,customerKey=`customer-session:${await digest(customerToken)}`;
     const admin={role:'operator',operatorId,email:'synthetic@example.test',territoryIds:['andover']},customer={customerId,expiresAt:new Date(Date.now()+3600000).toISOString()};sessions.set(adminKey,admin);sessions.set(customerKey,customer);
@@ -30,7 +33,8 @@ export default {
     const replay=await command({requestId:noteId,now:'2026-10-28T18:00:00Z'});assert(replay.reused===true&&replay.revision===2,'replay-after-later-changes');
     const final=await db.prepare('SELECT revision,snapshot_json FROM booking_transactions WHERE id=?').bind(bookingId).first(),stored=JSON.parse(final.snapshot_json);assert(stored.customerId===customerId&&stored.operatorId===operatorId&&stored.price===snapshot.price&&stored.status==='confirmed'&&stored.customerRequestStatus==='received','identity-price-appointment-preserved');
     const receipts=await db.prepare('SELECT command_json FROM booking_mutations WHERE booking_id=? AND command_json IS NOT NULL').bind(bookingId).all();assert(receipts.results.length===3&&receipts.results.every(row=>{const meta=JSON.parse(row.command_json);return meta.version===1&&typeof meta.actor==='string'&&meta.actor.length===64&&!row.command_json.includes('Synthetic note')}),'atomic-command-metadata-present');
+    const fixtures=await extendedProof({db,local,request,sessions,adminKey,admin,runId,customerId,operatorId,assert});
     await commitBookingChange(db,{bookingId,expectedRevision:final.revision,requestId:crypto.randomUUID(),snapshot:{...stored,proof:'commands-passed',runId,checks},reservation:null,events:[]});
-    console.log(JSON.stringify({suite:'booking-command-proof',passed:true,runId,bookingId,checks}));
+    console.log(JSON.stringify({suite:'booking-command-proof',passed:true,runId,bookingId,fixtures,checks}));
   }
 };
