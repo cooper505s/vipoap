@@ -1,3 +1,4 @@
+import {brandEmail} from '../_shared/staff-signatures.js';
 import {takeRateLimit} from '../_shared/rate-limit.js';
 import {ensureCustomer} from '../_shared/customers.js';
 
@@ -19,7 +20,7 @@ async function createReference(env){
 
 async function notify(env,{to,subject,html,key}){
   if(!to||!env.RESEND_API_KEY||!env.BOOKING_FROM_EMAIL)return false;
-  const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${env.RESEND_API_KEY}`,'content-type':'application/json','idempotency-key':key},body:JSON.stringify({from:env.BOOKING_FROM_EMAIL,to:[to],subject,html})});
+  const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${env.RESEND_API_KEY}`,'content-type':'application/json','idempotency-key':key},body:JSON.stringify(await brandEmail(env,{from:env.BOOKING_FROM_EMAIL,to:[to],subject,html},'reception'))});
   return response.ok;
 }
 

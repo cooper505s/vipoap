@@ -8,10 +8,11 @@ const invalid=()=>new Error('The export is incomplete or has invalid booking rec
 
 export function inspectBookingExport(input){
   if(input?.complete!==true||!Array.isArray(input.records)||input.records.length>100000||!['preview','production'].includes(input.source)||!Number.isFinite(Date.parse(input.exportedAt)))throw invalid();
-  const seen=new Set(),bookings=[];let otherRecords=0;
+  const seen=new Set(),bookings=[],fingerprints=[];let otherRecords=0;
   for(const item of input.records){
     if(!item||typeof item.key!=='string'||!item.key||item.key.length>512||seen.has(item.key))throw invalid();
-    seen.add(item.key);
+    if(typeof item.value!=='string'||Buffer.byteLength(item.value)>26214400)throw invalid();
+    seen.add(item.key);fingerprints.push({key:item.key,sourceHash:hash(item.value)});
     if(!item.key.startsWith('booking:')){otherRecords++;continue;}
     if(typeof item.value!=='string'||Buffer.byteLength(item.value)>1048576)throw invalid();
     let record;try{record=JSON.parse(item.value)}catch{throw invalid()}
@@ -25,7 +26,8 @@ export function inspectBookingExport(input){
     bookings.push({key:item.key,sourceHash:hash(item.value),issues});
   }
   bookings.sort((a,b)=>a.key<b.key?-1:a.key>b.key?1:0);
-  return{version:1,source:input.source,exportedAt:input.exportedAt,dryRun:true,cutoverReady:false,recordCount:input.records.length,otherRecordCount:otherRecords,bookingCount:bookings.length,exceptionCount:bookings.filter(item=>item.issues.length).length,manifestHash:hash(JSON.stringify(bookings)),bookings};
+  fingerprints.sort((a,b)=>a.key<b.key?-1:a.key>b.key?1:0);
+  return{version:1,source:input.source,exportedAt:input.exportedAt,dryRun:true,cutoverReady:false,recordCount:input.records.length,otherRecordCount:otherRecords,bookingCount:bookings.length,exceptionCount:bookings.filter(item=>item.issues.length).length,exportHash:hash(JSON.stringify(fingerprints)),manifestHash:hash(JSON.stringify(bookings)),bookings};
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){

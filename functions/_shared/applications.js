@@ -1,3 +1,4 @@
+import {brandEmail} from './staff-signatures.js';
 export const APPLICATION_RETENTION_DAYS = 180;
 export const applicationReference = id => `APP-${id}`;
 export const applicationHeaders = {'cache-control':'no-store','x-content-type-options':'nosniff'};
@@ -65,8 +66,8 @@ export async function notifyApplication(env,id) {
     const response=await fetch('https://api.resend.com/emails',{
       method:'POST',signal:AbortSignal.timeout(10000),
       headers:{authorization:`Bearer ${env.RESEND_API_KEY}`,'content-type':'application/json','idempotency-key':`engineer-application-${id}`},
-      body:JSON.stringify({from:env.BOOKING_FROM_EMAIL,to:['admin@vipoap.co.uk'],subject:'New VIPOAP engineer application',
-        text:`A new application has been saved. Reference: ${applicationReference(id)}. Review it in VIPOAP OS: https://vipoap.co.uk/admin/applications`})
+      body:JSON.stringify(await brandEmail(env,{from:env.BOOKING_FROM_EMAIL,to:['admin@vipoap.co.uk'],subject:'New VIPOAP engineer application',html:`<p>A new application has been saved. Reference: <strong>${applicationReference(id)}</strong>.</p><p><a href="https://vipoap.co.uk/admin/applications">Review it in VIPOAP OS</a></p>`,
+        text:`A new application has been saved. Reference: ${applicationReference(id)}. Review it in VIPOAP OS: https://vipoap.co.uk/admin/applications`},'recruitment'))
     });
     delivered=response.ok;
   } catch { /* The saved application remains available in the HQ queue. */ }

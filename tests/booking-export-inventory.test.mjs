@@ -30,3 +30,10 @@ test('import inventory quarantines invalid dates and clock-change ambiguity',()=
     const result=inspectBookingExport(input([booking('booking:time',{date,time})]));assert.deepEqual(result.bookings[0].issues,['invalid-wall-time']);assert.equal(result.exceptionCount,1);
   }
 });
+
+
+test('complete export integrity includes non-booking eligibility and session records without exposing them',()=>{
+ const record=booking(),operator={key:'operator:private-engineer',value:'private eligibility one'},session={key:'admin-session:private',value:'private session token'},first=inspectBookingExport(input([record,operator,session])),reordered=inspectBookingExport(input([session,operator,record])),changed=inspectBookingExport(input([record,{...operator,value:'private eligibility two'},session]));
+ assert.equal(first.exportHash,reordered.exportHash);assert.notEqual(first.exportHash,changed.exportHash);assert.equal(first.manifestHash,changed.manifestHash);assert.match(first.exportHash,/^[a-f0-9]{64}$/);assert.doesNotMatch(JSON.stringify(first),/private-engineer|private eligibility|private session token|admin-session/);
+});
+test('complete export cannot silently accept malformed non-booking record values',()=>{for(const value of [null,{},42])assert.throws(()=>inspectBookingExport(input([booking(),{key:'operator:invalid',value}])))});

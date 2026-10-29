@@ -53,7 +53,7 @@ test('Engineer Partners cannot read or submit central customer health checks',as
 });
 
 test('health check UI provides eight described areas, quick choices and notes without an editable score',()=>{
-  const page=fs.readFileSync(new URL('../admin/health-check.html',import.meta.url),'utf8');
+  const page=fs.readFileSync(new URL('../admin/health-check.html',import.meta.url),'utf8')+fs.readFileSync(new URL('../admin/health-check.js',import.meta.url),'utf8');
   const app=fs.readFileSync(new URL('../app/account-health.js',import.meta.url),'utf8');
   assert.match(page,/VIPOAP calculates the overall score|Calculating and saving/);
   assert.doesNotMatch(page,/id="overallScore"/);
@@ -62,4 +62,14 @@ test('health check UI provides eight described areas, quick choices and notes wi
   assert.match(page,/Optional note for this area/);
   assert.match(page,/Customer-safe visit summary/);
   assert.match(app,/Home Health Check/);
+});
+
+
+test('health history follows all KV pages and keeps reverse date ordering',async()=>{
+ const {env,values}=setup();for(const [id,completedAt] of [['first','2026-01-01'],['second','2026-02-01']])values.set(`health-check:customer:one:${id}`,JSON.stringify({id,completedAt}));
+ env.VIPOAP_DATA.list=async({cursor})=>cursor?{keys:[{name:'health-check:customer:one:second'}],list_complete:true}:{keys:[{name:'health-check:customer:one:first'}],cursor:'next',list_complete:false};
+ const response=await onRequestGet({request:request(),env});assert.equal(response.status,200);assert.deepEqual((await response.json()).checks.map(item=>item.id),['second','first']);
+});
+test('malformed assessment objects cannot write customer or check records',async()=>{
+ const {env,values}=setup(),before=[...values];for(const body of ['null','[]','"wrong"']){const response=await onRequestPost({request:new Request('https://vipoap.test/api/admin/health-checks',{method:'POST',headers:{'x-admin-password':'secret','content-type':'application/json'},body}),env});assert.equal(response.status,400)}assert.deepEqual([...values],before);
 });

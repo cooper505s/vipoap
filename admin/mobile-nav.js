@@ -1,9 +1,9 @@
 (()=>{
-  if(document.body.dataset.workspace==='admin'||(document.body.dataset.workspace==='engineer'&&(sessionStorage.getItem('vipoapAdmin')||sessionStorage.getItem('vipoapAdminSession')))){
+  if(document.body.dataset.workspace==='admin'||sessionStorage.getItem('vipoapAdmin')||sessionStorage.getItem('vipoapAdminSession')){
     document.body.classList.add('software-workspace');
     const main=document.querySelector('main');if(main)main.classList.add('workspace-main');
-    const css=document.createElement('link');css.rel='stylesheet';css.href='/admin/workspace.css?v=4';document.head.append(css);
-    const shell=document.createElement('script');shell.src='/admin/workspace.js?v=4';document.body.append(shell);
+    const css=document.createElement('link');css.rel='stylesheet';css.href='/admin/workspace.css?v=7';document.head.append(css);
+    const shell=document.createElement('script');shell.src='/admin/workspace.js?v=10';document.body.append(shell);
     return;
   }
   const icon=document.querySelector('link[rel~="icon"]')||document.createElement('link');
@@ -67,6 +67,6 @@
   const observer=new MutationObserver(()=>{applyVisibility();if(signedIn()&&(mobile.hidden||desktop.hidden))syncNav()});
   observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
   let prompt;window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();prompt=event;if(document.getElementById('installOS'))return;const target=document.querySelector('.os-install-slot');if(!target)return;const button=document.createElement('button');button.id='installOS';button.className='btn os-install';button.type='button';button.textContent='Install VIPOAP OS';button.onclick=async()=>{if(!prompt)return;prompt.prompt();await prompt.userChoice;prompt=null;button.remove()};target.append(button)});
-  if('serviceWorker'in navigator)navigator.serviceWorker.register('/admin/service-worker.js');
+  if('serviceWorker'in navigator)navigator.serviceWorker.register('/admin/service-worker.js',{updateViaCache:'none'});
 })();
 (function(){if(document.getElementById('connectivityStatus'))return;var script=document.createElement('script');script.src='/assets/connectivity.js';document.body.appendChild(script)})();

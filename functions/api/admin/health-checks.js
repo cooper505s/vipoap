@@ -1,3 +1,4 @@
+import {allRecords} from '../../_shared/team.js';
 import {adminContext,canAccessTerritory} from '../../_shared/admin-auth.js';
 import {hasPermission} from '../../_shared/permissions.js';
 import {audit} from '../../_shared/audit.js';
@@ -23,10 +24,6 @@ function automaticRecommendations(answers){
     return [];
   });
 }
-async function list(env,prefix){
-  const keys=await env.VIPOAP_DATA.list({prefix});
-  return Promise.all(keys.keys.map(async key=>({key:key.name,...await env.VIPOAP_DATA.get(key.name,'json')})));
-}
 function validAnswer(value){return value==='not-applicable'||Object.hasOwn(LEVELS,value)}
 
 export async function onRequestGet({request,env}){
@@ -36,7 +33,7 @@ export async function onRequestGet({request,env}){
   const customerId=clean(new URL(request.url).searchParams.get('customerId'),120);
   const customer=customerId.startsWith('customer:')?await env.VIPOAP_DATA.get(customerId,'json'):null;
   if(!customer||!canAccessTerritory(context,customer.territoryId||'andover'))return Response.json({error:'Customer not found.'},{status:404});
-  const checks=(await list(env,`health-check:${customerId}:`)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
+  const checks=(await allRecords(env.VIPOAP_DATA,`health-check:${customerId}:`)).sort((a,b)=>String(b.completedAt).localeCompare(String(a.completedAt)));
   return Response.json({customer:{id:customerId,name:customer.name,technologyScore:customer.technologyScore||null},domains:HEALTH_DOMAINS,checks});
 }
 
@@ -45,6 +42,7 @@ export async function onRequestPost({request,env}){
   if(!hasPermission(context,'manage_customers'))return Response.json({error:'Administrator customer access required.'},{status:403});
   if(!env.VIPOAP_DATA)return Response.json({error:'VIPOAP_DATA binding is not configured.'},{status:500});
   let body;try{body=await request.json()}catch{return Response.json({error:'Invalid assessment.'},{status:400})}
+  if(!body||typeof body!=='object'||Array.isArray(body))return Response.json({error:'Invalid assessment.'},{status:400});
   const customerId=clean(body.customerId,120);
   const customer=customerId.startsWith('customer:')?await env.VIPOAP_DATA.get(customerId,'json'):null;
   if(!customer||!canAccessTerritory(context,customer.territoryId||'andover'))return Response.json({error:'Customer not found.'},{status:404});
