@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {directoryPage} from '../admin/directory-pagination.js';
+const rows=Array.from({length:125},(_,index)=>({id:index+1,text:`Engineer ${String(index+1).padStart(3,'0')} territory ${index%2?'Andover':'Winchester'}`}));
+test('directory search includes records beyond the first displayed page',()=>{const result=directoryPage(rows,'ENGINEER 125');assert.deepEqual(result.items.map(item=>item.id),[125]);assert.equal(result.total,1);assert.equal(result.page,0)});
+test('directory pages stay bounded and clamp after records are removed',()=>{const middle=directoryPage(rows,'',1);assert.equal(middle.items.length,50);assert.equal(middle.start,51);assert.equal(middle.end,100);const result=directoryPage(rows.slice(0,3),'',2);assert.equal(result.page,0);assert.equal(result.end,3);assert.equal(rows.length,125)});
+test('an unmatched filter returns an empty page without an invalid range',()=>{const result=directoryPage(rows,'no such territory',3);assert.equal(result.total,0);assert.equal(result.start,0);assert.equal(result.end,0);assert.equal(result.page,0);assert.deepEqual(result.items,[])});
