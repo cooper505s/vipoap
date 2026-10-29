@@ -10,7 +10,7 @@ function canonical(value){
 }
 async function fingerprint(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return Array.from(new Uint8Array(bytes),x=>x.toString(16).padStart(2,'0')).join('');}
 const size=value=>new TextEncoder().encode(value).byteLength;
-export async function commitBookingChange(db,{bookingId,expectedRevision,requestId,snapshot,events=[],reservation,commandMetadata,safetyCase}){
+export async function commitBookingChange(db,{bookingId,expectedRevision,requestId,snapshot,events=[],reservation,commandMetadata,safetyCase,checkoutIntent}){
   if(!db)throw failure('Transactional booking storage is unavailable.',503);
   if(typeof bookingId!=='string'||!bookingId||bookingId.length>160||!Number.isSafeInteger(expectedRevision)||expectedRevision<0||expectedRevision>=Number.MAX_SAFE_INTEGER)throw failure('Invalid booking identity or revision.',400);
   if(typeof requestId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(requestId))throw failure('A unique change request is required.',400);
@@ -31,7 +31,11 @@ export async function commitBookingChange(db,{bookingId,expectedRevision,request
     caseJson=canonical(safetyCase.report);if(size(caseJson)>16384)throw failure('Safety report is too large.',413);
     try{await db.prepare('SELECT id FROM booking_safety_cases LIMIT 0').all()}catch{throw failure('Safety case storage is unavailable.',503)}
   }
-  const id=requestId.toLowerCase(),requestHash=await fingerprint(canonical({bookingId,expectedRevision,snapshot,events:normalized,reservation:slot,...(commandMetadata===undefined?{}:{commandMetadata}),...(safetyCase===undefined?{}:{safetyCase})}));
+  if(checkoutIntent!==undefined){
+    if(!checkoutIntent||Object.getPrototypeOf(checkoutIntent)!==Object.prototype||Object.keys(checkoutIntent).sort().join(',')!=='amountPence,currency,id,purpose'||typeof checkoutIntent.id!=='string'||!/^checkout-intent:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(checkoutIntent.id)||checkoutIntent.purpose!=='additional-time'||checkoutIntent.currency!=='GBP'||!Number.isSafeInteger(checkoutIntent.amountPence)||checkoutIntent.amountPence<1)throw failure('Invalid checkout intent.',400);
+    try{await db.prepare('SELECT id FROM booking_checkout_intents LIMIT 0').all()}catch{throw failure('Checkout intent storage is unavailable.',503)}
+  }
+  const id=requestId.toLowerCase(),requestHash=await fingerprint(canonical({bookingId,expectedRevision,snapshot,events:normalized,reservation:slot,...(commandMetadata===undefined?{}:{commandMetadata}),...(safetyCase===undefined?{}:{safetyCase}),...(checkoutIntent===undefined?{}:{checkoutIntent})}));
   const prior=await db.prepare('SELECT booking_id,request_hash,revision FROM booking_mutations WHERE id=?').bind(id).first();
   if(prior){if(prior.request_hash!==requestHash)throw failure('This request was already used for different booking changes.',409);return{bookingId:prior.booking_id,revision:prior.revision,reused:true};}
   const now=new Date().toISOString(),revision=expectedRevision+1,commitToken=crypto.randomUUID();
@@ -43,6 +47,7 @@ export async function commitBookingChange(db,{bookingId,expectedRevision,request
     ...(reservation===undefined?[]:[db.prepare('DELETE FROM booking_slot_reservations WHERE booking_id=? AND EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?)').bind(bookingId,id,commitToken)]),
     ...(reservation?[db.prepare('INSERT INTO booking_slot_reservations (booking_id,engineer_id,start_ms,end_ms) SELECT ?,?,?,? WHERE EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?)').bind(bookingId,reservation.engineerId,reservation.startMs,reservation.endMs,id,commitToken)]:[]),
     ...(safetyCase===undefined?[]:[db.prepare("INSERT INTO booking_safety_cases (id,booking_id,mutation_id,territory_id,reporter_hash,report_json,created_at) SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?)").bind(safetyCase.id,bookingId,id,safetyCase.territoryId,safetyCase.reporterHash,caseJson,now,id,commitToken)]),
+    ...(checkoutIntent===undefined?[]:[db.prepare('INSERT INTO booking_checkout_intents (id,booking_id,mutation_id,purpose,amount_pence,currency,created_at) SELECT ?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?)').bind(checkoutIntent.id,bookingId,id,checkoutIntent.purpose,checkoutIntent.amountPence,checkoutIntent.currency,now,id,commitToken)]),
     ...normalized.map((event,index)=>db.prepare("INSERT INTO booking_outbox (id,mutation_id,booking_id,kind,payload_json,created_at) SELECT ?,?,?,?, ?,? WHERE EXISTS(SELECT 1 FROM booking_mutations WHERE id=? AND commit_token=?) ON CONFLICT(id) DO NOTHING").bind(`${id}:${index}`,id,bookingId,event.kind,event.payload,now,id,commitToken))
   ];
   statements.push(db.prepare('SELECT booking_id,request_hash,revision FROM booking_mutations WHERE id=?').bind(id));

@@ -11,6 +11,7 @@ export default {
     await db.prepare('SELECT command_json FROM booking_mutations LIMIT 0').all();
     await db.prepare('SELECT report_json,revision,review_token FROM booking_safety_cases LIMIT 0').all();
     await db.prepare('SELECT actor_hash,input_hash FROM booking_safety_reviews LIMIT 0').all();
+    await db.prepare('SELECT amount_pence,state FROM booking_checkout_intents LIMIT 0').all();
     const runId=crypto.randomUUID(),bookingId=`booking:qa-command-${runId}`,operatorId=`qa-engineer-${runId}`,customerId=`customer:qa-${runId}`,token=`qa-admin-${runId}`,customerToken=`qa-customer-${runId}`,sessions=new Map(),checks=[];
     const adminKey=`admin-session:${await digest(token)}`,customerKey=`customer-session:${await digest(customerToken)}`;
     const admin={role:'operator',operatorId,email:'synthetic@example.test',territoryIds:['andover']},customer={customerId,expiresAt:new Date(Date.now()+3600000).toISOString()};sessions.set(adminKey,admin);sessions.set(customerKey,customer);
