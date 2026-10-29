@@ -1,5 +1,8 @@
 # Cloudflare D1 booking runtime proof — 28 October 2026
 
+> Current staging status, 29 October: migrations0014–0015 were applied once to the independently confirmed isolated `vipoap-rebuild-preview` D1 database. A subsequent sqlite_master query verified both tables, review columns and both indexes. Production schema is unchanged. Do not repeat the ALTER statements. Older preparation notes below describe the state before this staging step. The expanded command Worker is still not deployed/run on Cloudflare: the signed-in dashboard and preview binding work, but the code editor remains blank/loading with Deploy disabled after one reload.
+
+
 ## Scope and evidence
 
 A manual scheduled event executed the staged `commitBookingChange` primitive in Cloudflare Workers against **vipoap-rebuild-preview**, D1 database `e7ac3c3a-9c55-4674-a2d0-ae28c6c23967`. No production storage binding, mail/payment provider, public test trigger or recurring cron was configured. The dedicated Worker is `vipoap-booking-runtime-proof`; its HTTP handler returns404. Its `VIPOAP_TEST_DB` binding and database identifier were visibly verified before execution. The runner also requires the previously created synthetic preview marker before performing any mutation.

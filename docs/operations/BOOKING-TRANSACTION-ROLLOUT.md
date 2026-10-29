@@ -1,5 +1,8 @@
 # Transactional booking foundation and cutover gates
 
+> Current staging status, 29 October: migrations0014–0015 were applied once to the independently confirmed isolated `vipoap-rebuild-preview` D1 database. A subsequent sqlite_master query verified both tables, review columns and both indexes. Production schema is unchanged. Do not repeat the ALTER statements. Older preparation notes below describe the state before this staging step. The expanded command Worker is still not deployed/run on Cloudflare: the signed-in dashboard and preview binding work, but the code editor remains blank/loading with Deploy disabled after one reload.
+
+
 ## Current status
 
 `booking-transactions.js`, `booking-outbox.js` and migrations0011–0014 are staged foundations only. No HTTP handler or scheduled trigger imports these modules, no schema change has been applied to production, no KV record is migrated, and no live dispatcher reads this outbox. Live bookings still use KV. Do not describe production double-booking prevention or exactly-once fulfillment as complete.
