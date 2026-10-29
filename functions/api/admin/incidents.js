@@ -1,11 +1,12 @@
-import {authorised,adminContext,canAccessTerritory} from '../../_shared/admin-auth.js';
+import {allRecords} from '../../_shared/team.js';
+import {adminContext,canAccessTerritory} from '../../_shared/admin-auth.js';
 import {hasPermission} from '../../_shared/permissions.js';
 function clean(value,max=2000){return String(value??'').trim().replace(/[<>]/g,'').slice(0,max)}
-async function list(kv,prefix){const keys=await kv.list({prefix});return Promise.all(keys.keys.map(async k=>({key:k.name,...await kv.get(k.name,'json')})))}
+const inScope=(context,incident)=>context.territoryIds.includes('*')||(typeof incident.territoryId==='string'&&incident.territoryId.length>0&&canAccessTerritory(context,incident.territoryId));
 
 export async function onRequestGet({request,env}){
-  if(!await authorised(request,env,'manage_incidents'))return Response.json({error:'Unauthorised'},{status:401});
-  const incidents=(await list(env.VIPOAP_DATA,'incident:')).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const context=await adminContext(request,env);if(!hasPermission(context,'manage_incidents'))return Response.json({error:'Unauthorised'},{status:401});
+  const incidents=(await allRecords(env.VIPOAP_DATA,'incident:')).filter(incident=>inScope(context,incident)).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
   return Response.json({incidents});
 }
 
@@ -29,10 +30,10 @@ export async function onRequestPost({request,env}){
 }
 
 export async function onRequestPatch({request,env}){
-  if(!await authorised(request,env,'manage_incidents'))return Response.json({error:'Unauthorised'},{status:401});
-  const body=await request.json(),key=clean(body.key,200),status=clean(body.status,30);
+  const context=await adminContext(request,env);if(!hasPermission(context,'manage_incidents'))return Response.json({error:'Unauthorised'},{status:401});
+  let body;try{body=await request.json()}catch{return Response.json({error:'Invalid incident update.'},{status:400})}if(!body||typeof body!=='object'||Array.isArray(body))return Response.json({error:'Invalid incident update.'},{status:400});const key=clean(body.key,200),status=clean(body.status,30);
   if(!key.startsWith('incident:')||!['new','triaged','action-required','awaiting-information','resolved','closed'].includes(status))return Response.json({error:'Invalid incident update.'},{status:400});
-  const incident=await env.VIPOAP_DATA.get(key,'json');if(!incident)return Response.json({error:'Incident not found.'},{status:404});
+  const incident=await env.VIPOAP_DATA.get(key,'json');if(!incident||!inScope(context,incident))return Response.json({error:'Incident not found.'},{status:404});
   const now=new Date().toISOString(),updated={...incident,status,severity:['critical','high','medium','low'].includes(body.severity)?body.severity:incident.severity,ownerId:clean(body.ownerId,100),dueAt:clean(body.dueAt,40),updatedAt:now,history:[...(incident.history||[]),{event:'updated',status,at:now}]};
   await env.VIPOAP_DATA.put(key,JSON.stringify(updated));return Response.json({ok:true,incident:updated});
 }
